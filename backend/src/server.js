@@ -1,0 +1,54 @@
+// backend/src/server.js
+
+// Importar módulos necesarios
+require('dotenv').config(); // Carga las variables de entorno desde .env
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+
+// Importar rutas
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+
+// Inicializar la aplicación Express
+const app = express();
+
+// Middlewares
+app.use(cors()); // Habilita CORS para todas las rutas
+app.use(express.json()); // Para parsear JSON en las peticiones (req.body)
+app.use(express.urlencoded({ extended: true })); // Para parsear datos de formularios URL-encoded
+
+// Conexión a MongoDB usando Mongoose
+const MONGODB_URI = process.env.MONGODB_URI;
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  // useCreateIndex: true, // Ya no es necesario en Mongoose 6+
+  // useFindAndModify: false // Ya no es necesario en Mongoose 6+
+})
+.then(() => {
+  console.log('Conectado a MongoDB Atlas!');
+})
+.catch((err) => {
+  console.error('Error al conectar a MongoDB:', err.message);
+  process.exit(1); // Salir si no se puede conectar a la DB
+});
+
+// Ruta de prueba
+app.get('/', (req, res) => {
+  res.send('¡Hola Mundo desde el backend de TexMentors!');
+});
+
+// TODO: Aquí irán nuestras rutas para usuarios, mentorías, etc.
+// const userRoutes = require('./routes/userRoutes');
+// app.use('/api/users', userRoutes);
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
+// Definir el puerto y arrancar el servidor
+const PORT = process.env.PORT || 5001; // Usar el puerto de .env o 5001 por defecto
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
