@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const helpTypeRoutes = require('./routes/helpTypeRoutes');
+const mentorshipRequestRoutes = require('./routes/mentorshipRequestRoutes');
 
 // Inicializar la aplicación Express
 const app = express();
@@ -45,7 +47,12 @@ app.get('/', (req, res) => {
 // app.use('/api/users', userRoutes);
 
 app.use('/api/auth', authRoutes);
+
 app.use('/api/users', userRoutes);
+
+app.use('/api/helptypes', helpTypeRoutes);
+
+app.use('/api/mentorship-requests', mentorshipRequestRoutes);
 
 // Definir el puerto y arrancar el servidor
 const PORT = process.env.PORT || 5001; // Usar el puerto de .env o 5001 por defecto
