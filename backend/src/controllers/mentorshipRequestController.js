@@ -1,30 +1,24 @@
 // backend/src/controllers/mentorshipRequestController.js
 const mongoose = require('mongoose');
 const MentorshipRequest = require('../models/mentorshipRequestModel');
-const User = require('../models/userModel'); // Para verificar roles
-const HelpType = require('../models/helpTypeModel'); // Para verificar si el tipo de ayuda existe
+const User = require('../models/userModel');
+const HelpType = require('../models/helpTypeModel');
 
 // @desc    Crear una nueva solicitud de mentoría (solo Estudiantes)
 // @route   POST /api/mentorship-requests
 // @access  Private/Estudiante
 exports.createMentorshipRequest = async (req, res) => {
     const { helpTypeId, title, description, studentAvailability, mentorUserId } = req.body;
-
-    // El ID del estudiante se obtiene del usuario logueado (req.user.id)
     const studentUserId = req.user.id;
 
-    // Validaciones básicas de entrada
     if (!helpTypeId || !title || !description) {
         return res.status(400).json({ message: 'Por favor, complete los campos tipo de ayuda, título y descripción.' });
     }
 
     try {
-        // 1. Verificar que el usuario logueado sea un estudiante
         if (req.user.rol !== 'estudiante') {
             return res.status(403).json({ message: 'Acceso denegado. Solo los estudiantes pueden crear solicitudes de mentoría.' });
         }
-
-        // 2. Verificar que el tipo de ayuda (helpTypeId) exista y esté activo
         if (!mongoose.Types.ObjectId.isValid(helpTypeId)) {
             return res.status(400).json({ message: 'ID de tipo de ayuda no válido.' });
         }
@@ -33,7 +27,6 @@ exports.createMentorshipRequest = async (req, res) => {
             return res.status(404).json({ message: 'Tipo de ayuda no encontrado o no está activo.' });
         }
 
-        // 3. (Opcional) Verificar si se proporcionó un mentorUserId
         let mentorExists = null;
         if (mentorUserId) {
             if (!mongoose.Types.ObjectId.isValid(mentorUserId)) {
@@ -44,42 +37,20 @@ exports.createMentorshipRequest = async (req, res) => {
                 return res.status(404).json({ message: 'Mentor especificado no encontrado, no es mentor o no está activo.' });
             }
         }
-        
-        // 4. (Opcional) Verificar si el estudiante ya tiene una solicitud activa/pendiente para el mismo tipo de ayuda
-        // Esto es para evitar duplicados, pero depende de la lógica de negocio que quieran.
-        // const existingRequest = await MentorshipRequest.findOne({
-        //     studentUser: studentUserId,
-        //     helpType: helpTypeId,
-        //     status: { $in: ['pendiente', 'aceptada', 'en_progreso'] }, // Estados considerados "activos"
-        //     isDeleted: false
-        // });
-        // if (existingRequest) {
-        //     return res.status(400).json({ message: 'Ya tienes una solicitud activa o pendiente para este tipo de ayuda.' });
-        // }
 
-
-        // 5. Crear la solicitud de mentoría
         const mentorshipRequest = await MentorshipRequest.create({
             studentUser: studentUserId,
-            mentorUser: mentorUserId || null, // Asignar si se proporcionó, sino null
+            mentorUser: mentorUserId || null,
             helpType: helpTypeId,
             title,
             description,
             studentAvailability: studentAvailability || '',
-            // status por defecto es 'pendiente' según el modelo
         });
 
-        // Popular los campos referenciados para la respuesta
-        // El middleware pre-find/findOne en el modelo MentorshipRequest ya debería hacer esto,
-        // pero si no, o para asegurar, podemos popular explícitamente aquí.
-        const populatedRequest = await MentorshipRequest.findById(mentorshipRequest._id)
-            // .populate('studentUser', 'nombre apellido email') // Ya se hace en el modelo
-            // .populate('mentorUser', 'nombre apellido email')  // Ya se hace en el modelo
-            // .populate('helpType', 'name');                   // Ya se hace en el modelo
-
+        const populatedRequest = await MentorshipRequest.findById(mentorshipRequest._id);
         res.status(201).json({
             message: 'Solicitud de mentoría creada exitosamente.',
-            mentorshipRequest: populatedRequest, // Usar la versión populada
+            mentorshipRequest: populatedRequest,
         });
 
     } catch (error) {
@@ -92,48 +63,30 @@ exports.createMentorshipRequest = async (req, res) => {
     }
 };
 
+// @desc    Obtener todas las solicitudes de mentoría (con filtros según rol)
+// @route   GET /api/mentorship-requests
+// @access  Private (Estudiante, Mentor, Admin)
 exports.getAllMentorshipRequests = async (req, res) => {
     try {
-        let query = {}; // Objeto de consulta inicial vacío
-
-        // El middleware 'protect' ya nos da req.user
+        let query = {};
         const userRole = req.user.rol;
         const userId = req.user.id;
 
         if (userRole === 'estudiante') {
-            // Los estudiantes solo ven sus propias solicitudes
             query.studentUser = userId;
         } else if (userRole === 'mentor') {
-            // Los mentores ven las solicitudes asignadas a ellos O las que están pendientes
-            // (para que puedan tomar alguna si el sistema lo permite, o para que un admin se las asigne)
-            // Esta lógica puede ajustarse según las reglas de negocio.
-            // Por ahora, un mentor ve las que tiene asignadas o todas las pendientes.
             query = {
                 $or: [
                     { mentorUser: userId },
-                    { status: 'pendiente', mentorUser: null } // Pendientes y sin mentor asignado
+                    { status: 'pendiente', mentorUser: null } 
                 ]
             };
-            // Podríamos añadir un filtro para que un mentor solo vea pendientes de su área,
-            // pero eso requiere que los HelpTypes o las solicitudes tengan un campo de "área"
-            // y que el mentor tenga "áreas de especialización". Por ahora, lo mantenemos simple.
-        } else if (userRole === 'admin') {
-            // Los administradores ven todas las solicitudes (query queda vacío para traer todas)
-            // No se necesita modificar 'query'
-        } else {
-            // Rol no reconocido o no debería acceder a esta ruta general (aunque 'protect' ya lo haría)
-            return res.status(403).json({ message: 'Rol de usuario no autorizado para esta acción.' });
+        } else if (userRole !== 'admin') { // Si no es admin y tampoco estudiante o mentor (aunque ya cubierto)
+             return res.status(403).json({ message: 'Rol de usuario no autorizado para esta acción.' });
         }
+        // Admin ve todo (query queda vacío)
 
-        // Siempre filtramos para no mostrar las eliminadas lógicamente,
-        // aunque el middleware pre-find del modelo ya debería hacer esto.
-        // query.isDeleted = false; // Redundante si el middleware del modelo funciona bien
-
-        // Ejecutar la consulta.
-        // El populate ya debería estar manejado por el middleware pre-find en el modelo MentorshipRequest.
-        const mentorshipRequests = await MentorshipRequest.find(query)
-            .sort({ createdAt: -1 }); // Ordenar por más recientes primero
-
+        const mentorshipRequests = await MentorshipRequest.find(query).sort({ createdAt: -1 });
         res.status(200).json(mentorshipRequests);
 
     } catch (error) {
@@ -141,52 +94,209 @@ exports.getAllMentorshipRequests = async (req, res) => {
         res.status(500).json({ message: 'Error del servidor al obtener las solicitudes de mentoría.', error: error.message });
     }
 };
+
+// @desc    Obtener una solicitud de mentoría por su ID
+// @route   GET /api/mentorship-requests/:id
+// @access  Private (Estudiante propietario, Mentor asignado, Admin)
 exports.getMentorshipRequestById = async (req, res) => {
     try {
         const requestId = req.params.id;
-
         if (!mongoose.Types.ObjectId.isValid(requestId)) {
             return res.status(400).json({ message: 'ID de solicitud de mentoría no válido.' });
         }
 
-        // El populate ya debería estar manejado por el middleware pre-findOne en el modelo MentorshipRequest.
         const mentorshipRequest = await MentorshipRequest.findById(requestId);
-
         if (!mentorshipRequest || mentorshipRequest.isDeleted) {
             return res.status(404).json({ message: 'Solicitud de mentoría no encontrada o ha sido eliminada.' });
         }
 
-        // Lógica de autorización: ¿Quién puede ver esta solicitud?
         const userRole = req.user.rol;
         const userId = req.user.id;
-
-        // Convertir ObjectId a string para comparación segura
         const studentOwnerId = mentorshipRequest.studentUser._id ? mentorshipRequest.studentUser._id.toString() : mentorshipRequest.studentUser.toString();
         const mentorAssignedId = mentorshipRequest.mentorUser ? (mentorshipRequest.mentorUser._id ? mentorshipRequest.mentorUser._id.toString() : mentorshipRequest.mentorUser.toString()) : null;
-
 
         if (userRole === 'admin' || 
             (userRole === 'estudiante' && studentOwnerId === userId) ||
             (userRole === 'mentor' && mentorAssignedId === userId)) {
-            // Admin puede verla.
-            // Estudiante propietario puede verla.
-            // Mentor asignado puede verla.
             res.status(200).json(mentorshipRequest);
         } else {
-            // Si es un mentor no asignado a esta solicitud específica, o un estudiante que no es el dueño.
-            // Podríamos permitir que un mentor vea detalles de solicitudes pendientes sin asignar,
-            // pero eso se manejaría mejor en la lógica de `getAllMentorshipRequests` con filtros.
-            // Aquí, si no cumple las condiciones, es un acceso no autorizado al detalle específico.
             return res.status(403).json({ message: 'Acceso denegado. No tienes permiso para ver esta solicitud específica.' });
         }
-
     } catch (error) {
         console.error('Error en getMentorshipRequestById:', error);
-        if (error.name === 'CastError') { // Aunque ya validamos el ObjectId
+        if (error.name === 'CastError') {
             return res.status(400).json({ message: 'ID de solicitud de mentoría con formato incorrecto.' });
         }
         res.status(500).json({ message: 'Error del servidor al obtener la solicitud de mentoría.', error: error.message });
     }
 };
 
-// TODO: updateMentorshipRequestStatus, etc.
+// @desc    Actualizar una solicitud de mentoría (estado, asignar mentor, etc.)
+// @route   PUT /api/mentorship-requests/:id
+// @access  Private (Admin, Mentor asignado, Estudiante propietario para ciertas acciones)
+exports.updateMentorshipRequest = async (req, res) => {
+    const requestId = req.params.id;
+    const { status, mentorUserId, internalNotes } = req.body; // Campos que se pueden actualizar
+
+    try {
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({ message: 'ID de solicitud de mentoría no válido.' });
+        }
+
+        const mentorshipRequest = await MentorshipRequest.findById(requestId);
+        if (!mentorshipRequest || mentorshipRequest.isDeleted) {
+            return res.status(404).json({ message: 'Solicitud de mentoría no encontrada o ya eliminada.' });
+        }
+
+        const userRole = req.user.rol;
+        const userId = req.user.id;
+        const studentOwnerId = mentorshipRequest.studentUser._id ? mentorshipRequest.studentUser._id.toString() : mentorshipRequest.studentUser.toString();
+        const currentMentorAssignedId = mentorshipRequest.mentorUser ? (mentorshipRequest.mentorUser._id ? mentorshipRequest.mentorUser._id.toString() : mentorshipRequest.mentorUser.toString()) : null;
+
+        let canUpdate = false;
+        let updates = {};
+
+        // Lógica de permisos y campos actualizables por ROL
+        if (userRole === 'admin') {
+            canUpdate = true;
+            if (status) updates.status = status; // Admin puede cambiar a cualquier estado (validar enum en el modelo)
+            if (mentorUserId !== undefined) { // Permite asignar o desasignar (enviando null)
+                 if (mentorUserId === null) {
+                    updates.mentorUser = null;
+                } else {
+                    if (!mongoose.Types.ObjectId.isValid(mentorUserId)) {
+                        return res.status(400).json({ message: 'ID de nuevo mentor no válido.' });
+                    }
+                    const newMentor = await User.findOne({ _id: mentorUserId, rol: 'mentor', isDeleted: false });
+                    if (!newMentor) {
+                        return res.status(404).json({ message: 'Nuevo mentor no encontrado, no es mentor o no está activo.' });
+                    }
+                    updates.mentorUser = mentorUserId;
+                }
+            }
+            if (internalNotes !== undefined) updates.internalNotes = internalNotes;
+        } 
+        else if (userRole === 'mentor' && currentMentorAssignedId === userId) { // Mentor asignado a ESTA solicitud
+            canUpdate = true;
+            // Mentor puede aceptar, rechazar, poner en progreso, completar, cancelar
+            const allowedMentorStatuses = ['aceptada_mentor', 'rechazada_mentor', 'en_progreso', 'completada', 'cancelada_admin']; // Usamos cancelada_admin para que el mentor "cancele" formalmente
+            if (status && allowedMentorStatuses.includes(status)) {
+                // Validar transiciones de estado permitidas para mentor
+                if ((mentorshipRequest.status === 'pendiente' && (status === 'aceptada_mentor' || status === 'rechazada_mentor')) ||
+                    (mentorshipRequest.status === 'aceptada_mentor' && (status === 'en_progreso' || status === 'cancelada_admin')) ||
+                    (mentorshipRequest.status === 'en_progreso' && (status === 'completada' || status === 'cancelada_admin'))) {
+                    updates.status = status;
+                } else {
+                    return res.status(400).json({ message: `Transición de estado inválida de '${mentorshipRequest.status}' a '${status}' para mentor.` });
+                }
+            } else if (status) {
+                 return res.status(400).json({ message: `Como mentor, solo puedes cambiar el estado a valores permitidos: ${allowedMentorStatuses.join(', ')}.` });
+            }
+            if (internalNotes !== undefined) updates.internalNotes = internalNotes; // Mentor puede añadir notas
+        }
+        else if (userRole === 'estudiante' && studentOwnerId === userId) { // Estudiante propietario
+            canUpdate = true;
+            // Estudiante solo puede cancelar su solicitud si está pendiente o aceptada (antes de en_progreso)
+            const allowedStudentStatuses = ['cancelada_estudiante'];
+            if (status && allowedStudentStatuses.includes(status)) {
+                if (['pendiente', 'aceptada_mentor'].includes(mentorshipRequest.status)) {
+                    updates.status = status;
+                } else {
+                    return res.status(400).json({ message: `Solo puedes cancelar tu solicitud si está pendiente o aceptada. Estado actual: ${mentorshipRequest.status}` });
+                }
+            } else if (status) {
+                return res.status(400).json({ message: `Como estudiante, solo puedes cambiar el estado a: ${allowedStudentStatuses.join(', ')}.` });
+            }
+            // Estudiante no puede cambiar mentor ni notas internas
+        }
+
+        if (!canUpdate || Object.keys(updates).length === 0) {
+            return res.status(403).json({ message: 'Acceso denegado o no hay campos válidos para actualizar para tu rol.' });
+        }
+
+        // Aplicar las actualizaciones
+        Object.assign(mentorshipRequest, updates);
+        const updatedRequest = await mentorshipRequest.save();
+
+        // El populate ya debería estar manejado por el middleware pre-save/findOne en el modelo,
+        // pero si findByIdAndUpdate se usara, necesitaría .populate() explícito.
+        // Con .save(), el documento ya está populado si las referencias lo estaban.
+        // Para asegurar la respuesta populada, podemos hacer findById de nuevo.
+        const populatedResponse = await MentorshipRequest.findById(updatedRequest._id);
+
+        res.status(200).json({
+            message: 'Solicitud de mentoría actualizada exitosamente.',
+            mentorshipRequest: populatedResponse
+        });
+
+    } catch (error) {
+        console.error('Error en updateMentorshipRequest:', error);
+        if (error.name === 'ValidationError') { // Errores de validación del modelo (ej. enum de status)
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: messages.join('. ') });
+        }
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'ID con formato incorrecto (solicitud o mentor).' });
+        }
+        res.status(500).json({ message: 'Error del servidor al actualizar la solicitud de mentoría.', error: error.message });
+    }
+};
+
+exports.deleteMentorshipRequest = async (req, res) => {
+    const requestId = req.params.id;
+
+    try {
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({ message: 'ID de solicitud de mentoría no válido.' });
+        }
+
+        const mentorshipRequest = await MentorshipRequest.findById(requestId);
+
+        if (!mentorshipRequest) { // Si no existe, no importa si está marcada como isDeleted o no
+            return res.status(404).json({ message: 'Solicitud de mentoría no encontrada.' });
+        }
+        
+        // Si ya está eliminada lógicamente
+        if (mentorshipRequest.isDeleted) {
+            return res.status(400).json({ message: 'Esta solicitud de mentoría ya ha sido eliminada previamente.' });
+        }
+
+
+        const userRole = req.user.rol;
+        const userId = req.user.id;
+        const studentOwnerId = mentorshipRequest.studentUser._id ? mentorshipRequest.studentUser._id.toString() : mentorshipRequest.studentUser.toString();
+
+        let canDelete = false;
+
+        if (userRole === 'admin') {
+            canDelete = true;
+        } else if (userRole === 'estudiante' && studentOwnerId === userId) {
+            // Un estudiante solo puede eliminar su propia solicitud si está en estado 'pendiente'
+            // o quizás también 'aceptada_mentor' antes de que comience el trabajo.
+            // Ajusta estos estados según tus reglas de negocio.
+            if (['pendiente', 'aceptada_mentor', 'rechazada_mentor', 'rechazada_admin', 'cancelada_estudiante', 'cancelada_admin'].includes(mentorshipRequest.status)) {
+                canDelete = true;
+            } else {
+                return res.status(403).json({ message: `No puedes eliminar esta solicitud porque su estado actual es '${mentorshipRequest.status}'. Solo se pueden eliminar en estados tempranos o finales.` });
+            }
+        }
+
+        if (!canDelete) {
+            return res.status(403).json({ message: 'Acceso denegado. No tienes permiso para eliminar esta solicitud.' });
+        }
+
+        // Realizar la eliminación lógica
+        mentorshipRequest.isDeleted = true;
+        mentorshipRequest.deletedAt = new Date();
+        await mentorshipRequest.save();
+
+        res.status(200).json({ message: 'Solicitud de mentoría eliminada (lógicamente) exitosamente.' });
+
+    } catch (error) {
+        console.error('Error en deleteMentorshipRequest:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'ID de solicitud de mentoría con formato incorrecto.' });
+        }
+        res.status(500).json({ message: 'Error del servidor al eliminar la solicitud de mentoría.', error: error.message });
+    }
+};

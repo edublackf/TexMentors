@@ -34,7 +34,14 @@ const mentorshipRequestSchema = new Schema({
     status: {
         type: String,
         required: true,
-        enum: ['pendiente', 'aceptada', 'rechazada', 'en_progreso', 'completada', 'cancelada_estudiante', 'cancelada_mentor', 'cancelada_admin'],
+        enum: ['pendiente',
+            'aceptada_mentor', 
+            'rechazada_mentor',
+            'rechazada_admin',
+            'en_progreso',
+            'completada',
+            'cancelada_estudiante',
+            'cancelada_admin'],
         default: 'pendiente'
     },
     studentAvailability: { // Preferencia horaria del estudiante (texto libre o estructura más compleja)
