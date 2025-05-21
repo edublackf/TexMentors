@@ -41,7 +41,8 @@ const mentorshipRequestSchema = new Schema({
             'en_progreso',
             'completada',
             'cancelada_estudiante',
-            'cancelada_admin'],
+            'cancelada_admin',
+            'cancelada_mentor'],
         default: 'pendiente'
     },
     studentAvailability: { // Preferencia horaria del estudiante (texto libre o estructura más compleja)

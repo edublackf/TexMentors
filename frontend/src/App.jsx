@@ -7,6 +7,16 @@ import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminEditUserPage from './pages/AdminEditUserPage';
+import AdminHelpTypesPage from './pages/AdminHelpTypesPage';
+import AdminCreateHelpTypePage from './pages/AdminCreateHelpTypePage';
+import AdminEditHelpTypePage from './pages/AdminEditHelpTypePage';
+import AdminMentorshipRequestsPage from './pages/AdminMentorshipRequestsPage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
+import CreateMentorshipRequestPage from './pages/CreateMentorshipRequestPage';
+import StudentMentorshipRequestDetailPage from './pages/StudentMentorshipRequestDetailPage';
+import MentorDashboardPage from './pages/MentorDashboardPage'; 
+import MentorMentorshipRequestDetailPage from './pages/MentorMentorshipRequestDetailPage';
 
 // Componentes placeholder para dashboards y home
 const AdminDashboardLayout = () => (
@@ -14,16 +24,17 @@ const AdminDashboardLayout = () => (
         <h2>Panel de Administrador</h2>
         <nav>
             <ul>
-                <li><Link to="users">Gestionar Usuarios</Link></li> {/* Ruta relativa al layout */}
-                <li><Link to="helptypes">Gestionar Tipos de Ayuda (Pronto)</Link></li> {/* Ruta relativa */}
+                <li><Link to="users">Gestionar Usuarios</Link></li>
+                <li><Link to="helptypes">Gestionar Tipos de Ayuda</Link></li>
+                <li><Link to="requests">Gestionar Solicitudes</Link></li>
             </ul>
         </nav>
         <hr />
         <Outlet />
     </div>
 );
-const MentorDashboardPage = () => <h2>Panel de Mentor</h2>;
-const StudentDashboardPage = () => <h2>Panel de Estudiante</h2>;
+
+
 const HomePage = () => <h2>Página de Inicio Pública</h2>;
 
 const Navbar = () => {
@@ -77,26 +88,37 @@ function App() {
           >
             <Route index element={<div>Bienvenido al Panel de Administrador. Selecciona una opción del menú.</div>} />
             <Route path="users" element={<AdminUsersPage />} /> 
-            <Route path="helptypes" element={<div>Página de Gestión de Tipos de Ayuda (Pronto)</div>} />
+            <Route path="users/:userId/edit" element={<AdminEditUserPage />} /> 
+            <Route path="helptypes" element={<AdminHelpTypesPage />} /> 
+            <Route path="helptypes/new" element={<AdminCreateHelpTypePage />} /> {/* <--- NUEVA RUTA */}
+            <Route path="helptypes/:helpTypeId/edit" element={<AdminEditHelpTypePage />} /> {/* <--- NUEVA RUTA */}
+            <Route path="requests" element={<AdminMentorshipRequestsPage />} /> {/* <--- NUEVA RUTA */}
           </Route>
 
           <Route 
             path="/mentor-dashboard" 
             element={
               <ProtectedRoute rolesPermitidos={['mentor', 'admin']}>
-                <MentorDashboardPage />
+                 <Outlet /> {/* Para permitir rutas anidadas */}     
               </ProtectedRoute>
             } 
-          />
+          >
+            <Route index element={<MentorDashboardPage />} />
+            <Route path="requests/:requestId" element={<MentorMentorshipRequestDetailPage />} /> {/* <--- NUEVA RUTA */}
+          </Route>
           <Route 
             path="/student-dashboard" 
             element={
               <ProtectedRoute rolesPermitidos={['estudiante', 'admin']}>
-                <StudentDashboardPage />
+                <Outlet /> 
               </ProtectedRoute>
             } 
-          />
+          >
+          <Route index element={<StudentDashboardPage />} /> {/* La página principal del dashboard del estudiante */}
+          <Route path="create-request" element={<CreateMentorshipRequestPage />} /> 
+          <Route path="requests/:requestId" element={<StudentMentorshipRequestDetailPage />} /> 
           
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

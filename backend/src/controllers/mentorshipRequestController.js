@@ -136,7 +136,7 @@ exports.getMentorshipRequestById = async (req, res) => {
 // @access  Private (Admin, Mentor asignado, Estudiante propietario para ciertas acciones)
 exports.updateMentorshipRequest = async (req, res) => {
     const requestId = req.params.id;
-    const { status, mentorUserId, internalNotes } = req.body; // Campos que se pueden actualizar
+    const { status, mentorUser, internalNotes } = req.body; // Campos que se pueden actualizar
 
     try {
         if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -160,39 +160,51 @@ exports.updateMentorshipRequest = async (req, res) => {
         if (userRole === 'admin') {
             canUpdate = true;
             if (status) updates.status = status; // Admin puede cambiar a cualquier estado (validar enum en el modelo)
-            if (mentorUserId !== undefined) { // Permite asignar o desasignar (enviando null)
-                 if (mentorUserId === null) {
-                    updates.mentorUser = null;
-                } else {
-                    if (!mongoose.Types.ObjectId.isValid(mentorUserId)) {
-                        return res.status(400).json({ message: 'ID de nuevo mentor no válido.' });
-                    }
-                    const newMentor = await User.findOne({ _id: mentorUserId, rol: 'mentor', isDeleted: false });
-                    if (!newMentor) {
-                        return res.status(404).json({ message: 'Nuevo mentor no encontrado, no es mentor o no está activo.' });
-                    }
-                    updates.mentorUser = mentorUserId;
-                }
-            }
+            if (mentorUser !== undefined) { // <--- Usar mentorUser
+    if (mentorUser === null || mentorUser === "null" || mentorUser === "") { // <--- Usar mentorUser
+        updates.mentorUser = null;
+    } else {
+        if (!mongoose.Types.ObjectId.isValid(mentorUser)) { // <--- Usar mentorUser
+            return res.status(400).json({ message: 'ID de nuevo mentor no válido.' });
+        }
+        const newMentor = await User.findOne({ _id: mentorUser, rol: 'mentor', isDeleted: false }); // <--- Usar mentorUser
+        if (!newMentor) {
+            return res.status(404).json({ message: 'Nuevo mentor no encontrado, no es mentor o no está activo.' });
+        }
+        updates.mentorUser = mentorUser; // Esto ya estaba bien, pero la condición de arriba usa la variable correcta
+    }
+}
             if (internalNotes !== undefined) updates.internalNotes = internalNotes;
         } 
-        else if (userRole === 'mentor' && currentMentorAssignedId === userId) { // Mentor asignado a ESTA solicitud
-            canUpdate = true;
-            // Mentor puede aceptar, rechazar, poner en progreso, completar, cancelar
-            const allowedMentorStatuses = ['aceptada_mentor', 'rechazada_mentor', 'en_progreso', 'completada', 'cancelada_admin']; // Usamos cancelada_admin para que el mentor "cancele" formalmente
-            if (status && allowedMentorStatuses.includes(status)) {
-                // Validar transiciones de estado permitidas para mentor
-                if ((mentorshipRequest.status === 'pendiente' && (status === 'aceptada_mentor' || status === 'rechazada_mentor')) ||
-                    (mentorshipRequest.status === 'aceptada_mentor' && (status === 'en_progreso' || status === 'cancelada_admin')) ||
-                    (mentorshipRequest.status === 'en_progreso' && (status === 'completada' || status === 'cancelada_admin'))) {
-                    updates.status = status;
-                } else {
-                    return res.status(400).json({ message: `Transición de estado inválida de '${mentorshipRequest.status}' a '${status}' para mentor.` });
+        else if (userRole === 'mentor') {
+            const allowedMentorStatusesForAssigned = ['aceptada_mentor', 'rechazada_mentor', 'en_progreso', 'completada', 'cancelada_admin','cancelada_mentor'];
+            
+            if (currentMentorAssignedId === userId) { // Escenario 1: Mentor ya está asignado a esta solicitud
+                canUpdate = true;
+                if (status && allowedMentorStatusesForAssigned.includes(status)) {
+                    if ((mentorshipRequest.status === 'pendiente' && (status === 'aceptada_mentor' || status === 'rechazada_mentor')) ||
+                        (mentorshipRequest.status === 'aceptada_mentor' && (status === 'en_progreso' || status === 'cancelada_mentor')) ||
+                        (mentorshipRequest.status === 'en_progreso' && (status === 'completada' || status === 'cancelada_mentor'))) {
+                        updates.status = status;
+                    } else {
+                        return res.status(400).json({ message: `Transición de estado inválida de '${mentorshipRequest.status}' a '${status}' para mentor asignado.` });
+                    }
+                } else if (status) {
+                     return res.status(400).json({ message: `Como mentor asignado, solo puedes cambiar el estado a valores permitidos: ${allowedMentorStatusesForAssigned.join(', ')}.` });
                 }
-            } else if (status) {
-                 return res.status(400).json({ message: `Como mentor, solo puedes cambiar el estado a valores permitidos: ${allowedMentorStatuses.join(', ')}.` });
+                if (internalNotes !== undefined) updates.internalNotes = internalNotes;
+
+            } else if (!currentMentorAssignedId && mentorshipRequest.status === 'pendiente' && status === 'aceptada_mentor') {
+                // Escenario 2: Mentor "toma" una solicitud pendiente sin asignar
+                canUpdate = true;
+                updates.mentorUser = userId; // ASIGNAR AL MENTOR ACTUAL (el que hace la petición)
+                updates.status = 'aceptada_mentor'; // El estado deseado
+                if (internalNotes !== undefined) updates.internalNotes = internalNotes; // Puede añadir notas al tomarla
+            } else {
+                // No es el mentor asignado Y no está "tomando" una pendiente para aceptarla
+                 // O está intentando una acción no permitida sobre una solicitud no asignada o con estado incorrecto
+                return res.status(403).json({ message: 'No puedes actualizar esta solicitud porque no te ha sido asignada o la acción/estado no es permitida.' });
             }
-            if (internalNotes !== undefined) updates.internalNotes = internalNotes; // Mentor puede añadir notas
         }
         else if (userRole === 'estudiante' && studentOwnerId === userId) { // Estudiante propietario
             canUpdate = true;
@@ -211,6 +223,9 @@ exports.updateMentorshipRequest = async (req, res) => {
         }
 
         if (!canUpdate || Object.keys(updates).length === 0) {
+            if(canUpdate && Object.keys(updates).length === 0 && (req.body.hasOwnProperty('status') || req.body.hasOwnProperty('mentorUserId') || req.body.hasOwnProperty('internalNotes'))){
+                 return res.status(400).json({ message: 'Los datos proporcionados no son válidos o no resultaron en una actualización para tu rol.' });
+            }
             return res.status(403).json({ message: 'Acceso denegado o no hay campos válidos para actualizar para tu rol.' });
         }
 
