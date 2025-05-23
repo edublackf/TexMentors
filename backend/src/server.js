@@ -23,18 +23,13 @@ app.use(express.urlencoded({ extended: true })); // Para parsear datos de formul
 // Conexión a MongoDB usando Mongoose
 const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  // useCreateIndex: true, // Ya no es necesario en Mongoose 6+
-  // useFindAndModify: false // Ya no es necesario en Mongoose 6+
-})
+mongoose.connect(MONGODB_URI)
 .then(() => {
-  console.log('Conectado a MongoDB Atlas!');
+  console.log('Conectado a MongoDB Atlas!'); // Mensaje más específico
 })
 .catch((err) => {
   console.error('Error al conectar a MongoDB:', err.message);
-  process.exit(1); // Salir si no se puede conectar a la DB
+  // process.exit(1); // Puedes descomentar esto si quieres que la app termine si no conecta
 });
 
 // Ruta de prueba
