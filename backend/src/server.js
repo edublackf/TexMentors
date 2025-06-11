@@ -20,8 +20,8 @@ const app = express();
 const allowedOrigins = [
     'http://localhost:5173', // Tu frontend local (Vite)
     'http://localhost:3000', // Tu frontend local (CRA, si aplica)
-    // AÑADIRÁS LA URL DE VERCEL AQUÍ CUANDO LA TENGAS
-    // Ejemplo: 'https://texmentors-frontend.vercel.app' 
+   
+    'https://texmentors.vercel.app/' 
 ];
 
 const corsOptions = {

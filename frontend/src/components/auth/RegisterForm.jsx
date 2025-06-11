@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const API_URL = 'http://localhost:5000/api/auth';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const CICLOS = ["Ciclo 0", "Ciclo 1", "Ciclo 2", "Ciclo 3", "Ciclo 4", "Ciclo 5", "Ciclo 6", "Egresado"];
 const CARRERAS = [
@@ -59,7 +60,8 @@ function RegisterForm() {
         try {
             const userDataToSubmit = { nombre, apellido, email, password, carrera, cicloActual };
             
-            const response = await axios.post(`${API_URL}/register`, userDataToSubmit);
+            
+            const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userDataToSubmit);
             
             setLoading(false);
             toast.success(response.data.message || '¡Registro exitoso! Por favor, inicia sesión.');

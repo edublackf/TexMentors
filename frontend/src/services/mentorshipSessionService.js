@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // URL base para los endpoints de sesiones de mentoría
-const API_URL_SESSIONS = 'http://localhost:5000/api/sessions'; 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const SESSIONS_API_URL = `${API_BASE_URL}/api/sessions`; 
 
 // El token JWT se adjunta automáticamente por el interceptor de Axios configurado en AuthContext.
 
@@ -9,7 +10,7 @@ const API_URL_SESSIONS = 'http://localhost:5000/api/sessions';
 const createSession = async (sessionData) => {
     // sessionData debe incluir: mentorshipRequestId, proposedDateTimes, locationOrLink (opcional)
     try {
-        const response = await axios.post(API_URL_SESSIONS, sessionData);
+        const response = await axios.post(SESSIONS_API_URL, sessionData);
         return response.data; // Debería ser { message: '...', session: {...} }
     } catch (error) {
         console.error('Error al crear la sesión de mentoría:', error.response || error.message);
@@ -21,7 +22,7 @@ const createSession = async (sessionData) => {
 const getSessionsForRequest = async (mentorshipRequestId) => {
     try {
         // El endpoint es /api/sessions/request/:requestId
-        const response = await axios.get(`${API_URL_SESSIONS}/request/${mentorshipRequestId}`);
+        const response = await axios.get(`${SESSIONS_API_URL}/request/${mentorshipRequestId}`);
         return response.data; // Debería ser un array de sesiones
     } catch (error) {
         console.error(`Error al obtener sesiones para la solicitud ${mentorshipRequestId}:`, error.response || error.message);
@@ -32,7 +33,7 @@ const getSessionsForRequest = async (mentorshipRequestId) => {
 // Obtener una sesión específica por su ID (si necesitamos un detalle de sesión individual)
 const getSessionById = async (sessionId) => {
     try {
-        const response = await axios.get(`${API_URL_SESSIONS}/${sessionId}`);
+        const response = await axios.get(`${SESSIONS_API_URL}/${sessionId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al obtener la sesión ${sessionId}:`, error.response || error.message);
@@ -44,7 +45,7 @@ const getSessionById = async (sessionId) => {
 const updateSession = async (sessionId, updateData) => {
     // updateData podría ser: { status, confirmedDateTime, summaryMentor, feedbackStudent, locationOrLink }
     try {
-        const response = await axios.put(`${API_URL_SESSIONS}/${sessionId}`, updateData);
+        const response = await axios.put(`${SESSIONS_API_URL}/${sessionId}`, updateData);
         return response.data; // Debería ser { message: '...', session: {...} }
     } catch (error) {
         console.error(`Error al actualizar la sesión ${sessionId}:`, error.response || error.message);
@@ -55,7 +56,7 @@ const updateSession = async (sessionId, updateData) => {
 // Eliminar (lógicamente) una sesión de mentoría (si se implementa esta funcionalidad)
 const deleteSession = async (sessionId) => {
     try {
-        const response = await axios.delete(`${API_URL_SESSIONS}/${sessionId}`);
+        const response = await axios.delete(`${SESSIONS_API_URL}/${sessionId}`);
         return response.data; // Debería ser { message: '...' }
     } catch (error) {
         console.error(`Error al eliminar la sesión ${sessionId}:`, error.response || error.message);

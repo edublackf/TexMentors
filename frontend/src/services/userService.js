@@ -25,7 +25,7 @@ const getAllUsers = async () => {
 // Obtener un usuario por ID (requiere token de admin)
 const getUserById = async (userId) => {
     try {
-        const response = await axios.get(`${API_URL}/${userId}`);
+        const response = await axios.get(`${USERS_API_URL}/${userId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al obtener el usuario ${userId}:`, error.response || error.message);
@@ -36,7 +36,7 @@ const getUserById = async (userId) => {
 // Actualizar un usuario (requiere token de admin)
 const updateUser = async (userId, userData) => {
     try {
-        const response = await axios.put(`${API_URL}/${userId}`, userData);
+        const response = await axios.put(`${USERS_API_URL}/${userId}`, userData);
         return response.data;
     } catch (error) {
         console.error(`Error al actualizar el usuario ${userId}:`, error.response || error.message);
@@ -47,7 +47,7 @@ const updateUser = async (userId, userData) => {
 // Eliminar (lógicamente) un usuario (requiere token de admin)
 const deleteUser = async (userId) => {
     try {
-        const response = await axios.delete(`${API_URL}/${userId}`);
+        const response = await axios.delete(`${USERS_API_URL}/${userId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al eliminar el usuario ${userId}:`, error.response || error.message);
