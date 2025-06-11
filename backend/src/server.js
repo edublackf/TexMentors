@@ -16,11 +16,11 @@ const mentorshipSessionRoutes = require('./routes/mentorshipSessionRoutes');
 // Inicializar la aplicación Express
 const app = express();
 
+app.use(cors());
 
 const allowedOrigins = [
     'http://localhost:5173', // Tu frontend local (Vite)
     'http://localhost:3000', // Tu frontend local (CRA, si aplica)
-   
     'https://texmentors.vercel.app/' 
 ];
 
