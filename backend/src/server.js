@@ -16,6 +16,27 @@ const mentorshipSessionRoutes = require('./routes/mentorshipSessionRoutes');
 // Inicializar la aplicación Express
 const app = express();
 
+
+const allowedOrigins = [
+    'http://localhost:5173', // Tu frontend local (Vite)
+    'http://localhost:3000', // Tu frontend local (CRA, si aplica)
+    // AÑADIRÁS LA URL DE VERCEL AQUÍ CUANDO LA TENGAS
+    // Ejemplo: 'https://texmentors-frontend.vercel.app' 
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Permitir peticiones sin 'origin' (como Postman, apps móviles, o curl) Y las de la whitelist
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true, // Si usas cookies o cabeceras de autorización que necesiten esto
+};
+app.use(cors(corsOptions));
+
 // Middlewares
 app.use(cors()); // Habilita CORS para todas las rutas
 app.use(express.json()); // Para parsear JSON en las peticiones (req.body)

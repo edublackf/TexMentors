@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/users'; // URL base para los endpoints de usuarios
+//const API_URL = 'http://localhost:5000/api/users'; // URL base para los endpoints de usuarios
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'; // Fallback a localhost
+const API_URL = `${API_BASE_URL}/api/users`;
+const USERS_API_URL = `${API_BASE_URL}/api/users`;
+
+
+
 
 // El token JWT ya debería estar siendo adjuntado automáticamente por Axios
 // gracias a la configuración en AuthContext.
@@ -8,7 +14,7 @@ const API_URL = 'http://localhost:5000/api/users'; // URL base para los endpoint
 // Obtener todos los usuarios (requiere token de admin)
 const getAllUsers = async () => {
     try {
-        const response = await axios.get(API_URL);
+        const response = await axios.get(USERS_API_URL);
         return response.data;
     } catch (error) {
         console.error('Error al obtener todos los usuarios:', error.response || error.message);

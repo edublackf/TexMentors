@@ -2,7 +2,9 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios'; // Lo usaremos para configurar el interceptor
 
 // URL base de la API, podría estar en un archivo de configuración
-const API_BASE_URL = 'http://localhost:5000/api'; 
+//const API_BASE_URL = 'http://localhost:5000/api'; 
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'; 
 
 const AuthContext = createContext(null);
 
@@ -31,25 +33,9 @@ export const AuthProvider = ({ children }) => {
         const verifyUserToken = async () => {
             if (token) {
                 try {
-                    // Podríamos llamar a un endpoint /api/auth/me para validar el token y obtener datos del usuario
-                    // Por ahora, si hay token, asumimos que es válido y decodificamos (de forma simplificada)
-                    // En una app real, SIEMPRE validar el token con el backend.
-                    // Aquí vamos a intentar obtener los datos del usuario del localStorage si los guardamos,
-                    // o podríamos decodificar el token (con jwt-decode, por ejemplo) para obtener el rol y el ID.
-                    // *** PARA UNA VERSIÓN MÁS SEGURA Y COMPLETA, LLAMAR A /api/auth/me ***
-                    
-                    // Ejemplo simplificado: decodificar el token para obtener rol e id (necesitaría jwt-decode)
-                    // import { jwtDecode } from "jwt-decode"; // npm install jwt-decode
-                    // const decodedToken = jwtDecode(token);
-                    // setCurrentUser({ id: decodedToken.id, rol: decodedToken.rol, token: token });
-
-                    // Simulación (si no guardaste datos del user en localStorage y no quieres instalar jwt-decode ahora):
-                    // Si el token existe, asumimos que el usuario está logueado.
-                    // Necesitaríamos el rol para la navegación.
-                    // Mejor solución: llamar a /api/auth/me
-                    console.log("Verificando token al inicio...");
-                    const response = await axios.get(`${API_BASE_URL}/auth/me`); // axios ya tiene el token por el useEffect anterior
-                    setCurrentUser({ // Guardamos la info del usuario y el token
+                    console.log("Verificando token al inicio con URL:", `${API_BASE_URL}/api/auth/me`);
+                    const response = await axios.get(`${API_BASE_URL}/api/auth/me`); // <--- MODIFICADO
+                    setCurrentUser({
                         id: response.data._id,
                         nombre: response.data.nombre,
                         email: response.data.email,
@@ -57,19 +43,16 @@ export const AuthProvider = ({ children }) => {
                         fotoPerfilUrl: response.data.fotoPerfilUrl,
                         token: token 
                     });
-                    console.log("Usuario verificado desde /me:", response.data);
-
                 } catch (error) {
-                    console.error("Token inválido o expirado, limpiando:", error);
-                    setToken(null); // Limpia el token si /me falla
+                    console.error("Token inválido o expirado, limpiando:", error.response || error.message);
+                    setToken(null); 
                     setCurrentUser(null);
                 }
             }
             setLoading(false);
         };
-
         verifyUserToken();
-    }, [token]); // Se ejecuta cuando el token cambia
+    }, [token]);
 
     const login = async (email, password) => {
         // La lógica de login ya está en LoginForm, pero podría moverse aquí
@@ -77,7 +60,8 @@ export const AuthProvider = ({ children }) => {
         // lo que disparará el useEffect de este contexto.
         // Opcionalmente, esta función podría llamar al servicio y luego setToken.
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+            console.log("Intentando login con URL:", `${API_BASE_URL}/api/auth/login`);
+            const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
             if (response.data.token) {
                 setToken(response.data.token); // Esto actualiza el token en localStorage y el header de axios
                 setCurrentUser({ // Guardamos la info del usuario y el token

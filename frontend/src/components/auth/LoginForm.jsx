@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext'; // <--- IMPORTAR useAuth
 
 const API_URL = 'http://localhost:5000/api/auth';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -26,9 +27,9 @@ function LoginForm() {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/login`, {
-        email: email,
-        password: password,
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { 
+              email: email,
+              password: password,
       });
 
       setLoading(false);
