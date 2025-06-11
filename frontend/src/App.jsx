@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminUsersPage from './pages/AdminUsersPage';
@@ -41,7 +41,7 @@ const AdminDashboardLayout = () => (
 );
 
 
-const HomePage = () => <h2>Página de Inicio Pública</h2>;
+//const HomePage = () => <h2>Página de Inicio Pública</h2>;
 
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
@@ -56,7 +56,7 @@ const Navbar = () => {
         <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
             {/* Parte Izquierda del Navbar: Enlaces Principales */}
             <ul style={{ display: 'flex', listStyleType: 'none', padding: 0, margin: 0, gap: '15px' }}>
-                <li><Link to="/">Home</Link></li>
+                <li><Link to="/">Inicio</Link></li>
                 {currentUser && currentUser.rol === 'admin' && <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>}
                 {currentUser && currentUser.rol === 'mentor' && <li><Link to="/mentor-dashboard">Mentor Dashboard</Link></li>}
                 {currentUser && currentUser.rol === 'estudiante' && <li><Link to="/student-dashboard">Estudiante Dashboard</Link></li>}
@@ -65,7 +65,10 @@ const Navbar = () => {
             {/* Parte Derecha del Navbar: Info de Usuario y Logout */}
             <div style={{ marginLeft: 'auto' }}> {/* Empuja esta sección a la derecha */}
                 {!currentUser ? (
-                    <Link to="/login"><button>Login</button></Link>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <Link to="/login"><button>Iniciar Sesión</button></Link>
+                        <Link to="/register"><button style={{backgroundColor: '#2ecc71'}}>Registrarse</button></Link> {/* Botón Registrarse con color diferente */}
+                    </div>
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span>Hola, {currentUser.nombre}!</span> {/* Sin el rol */}

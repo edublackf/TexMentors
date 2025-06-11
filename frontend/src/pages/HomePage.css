@@ -1,0 +1,190 @@
+.homepage-container {
+  /* No necesita max-width aquí si #root > div ya lo maneja, 
+     pero sí podrías querer quitar el padding del #root > div para esta página específica 
+     si el header ocupa todo el ancho. Por ahora, lo dejamos así. */
+}
+
+/* Hero Section */
+.hero-section {
+  background-color: #3498db; /* Celeste principal */
+  /* Opcional: un degradado sutil */
+  /* background-image: linear-gradient(to bottom right, #3498db, #2980b9); */
+  color: white;
+  padding: 60px 20px; /* Más padding vertical */
+  text-align: center;
+  border-radius: 0 0 30px 30px; /* Bordes redondeados abajo */
+  margin: -20px -20px 0 -20px; /* Para que ocupe el ancho si #root>div tiene padding */
+}
+.hero-logo {
+    max-width: 120px;
+    margin-bottom: 15px;
+}
+.hero-section h1 {
+  font-size: 2.8em; /* Título más grande */
+  margin-bottom: 15px;
+  font-weight: 700;
+  color: white; /* Asegurar color blanco */
+}
+.hero-section .subtitle {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+.cta-button { /* Estilo general para botones de llamado a la acción */
+  background-color: #ffffff; /* Botón blanco sobre fondo celeste */
+  color: #3498db; /* Texto celeste */
+  padding: 15px 30px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.2s ease-in-out, background-color 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.cta-button:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-2px); /* Pequeño efecto al pasar el mouse */
+  color: #2980b9;
+}
+.hero-section .primary-cta { /* Botón principal en el hero */
+    /* Podría tener estilos ligeramente diferentes si es necesario */
+}
+
+
+/* Secciones Generales */
+.benefits-section, .how-it-works-section, .testimonials-section, .final-cta-section {
+  padding: 40px 20px;
+  max-width: 900px; /* Centrar contenido de secciones */
+  margin: 0 auto; /* Centrar secciones */
+  text-align: center;
+}
+.benefits-section h2, .how-it-works-section h2, .testimonials-section h2, .final-cta-section h2 {
+  font-size: 2em;
+  margin-bottom: 30px;
+  color: #2c3e50; /* Azul oscuro para títulos de sección */
+}
+
+/* Beneficios Grid */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsivo */
+  gap: 30px;
+  text-align: left;
+}
+.benefit-item {
+  background-color: #f9f9f9; /* Fondo muy claro para cada item */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.benefit-item .benefit-icon {
+  font-size: 2.5em; /* Iconos placeholder */
+  display: block;
+  margin-bottom: 10px;
+  color: #3498db; /* Celeste */
+}
+.benefit-item h3 {
+  font-size: 1.3em;
+  margin-bottom: 10px;
+  color: #3498db;
+}
+
+/* Cómo Funciona - Lista Ordenada */
+.steps-list {
+    list-style-type: none;
+    padding-left: 0;
+    max-width: 600px;
+    margin: 0 auto; /* Centrar la lista */
+    text-align: left;
+}
+.steps-list li {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    padding-left: 35px; /* Espacio para el número */
+    position: relative;
+}
+.steps-list li::before { /* Estilo para los números */
+    content: counter(step-counter);
+    counter-increment: step-counter;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: #3498db;
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.steps-list li span { /* Para resaltar la primera palabra del paso */
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+
+/* Testimonios Grid */
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+.testimonial-item {
+  background-color: #eaf4fc; /* Celeste muy pálido */
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 5px solid #3498db; /* Acento celeste */
+}
+.testimonial-item p {
+  font-style: italic;
+  margin-bottom: 10px;
+  color: #555;
+}
+.testimonial-item span { /* Nombre del "testigo" */
+  display: block;
+  font-weight: bold;
+  color: #2980b9;
+  text-align: right;
+}
+
+/* CTA Final */
+.final-cta-section p {
+  font-size: 1.1em;
+  margin-bottom: 25px;
+}
+/* El .cta-button ya está estilizado */
+
+/* Footer */
+.homepage-footer {
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.9em;
+  color: #7f8c8d;
+}
+
+/* Responsividad para el Hero Section */
+@media screen and (max-width: 768px) {
+  .hero-section h1 {
+    font-size: 2.2em;
+  }
+  .hero-section .subtitle {
+    font-size: 1em;
+  }
+  .cta-button {
+    padding: 12px 25px;
+    font-size: 1em;
+  }
+  .benefits-section h2, .how-it-works-section h2, .testimonials-section h2, .final-cta-section h2 {
+    font-size: 1.7em;
+  }
+  .hero-section {
+    margin: -10px -10px 0 -10px; /* Ajustar para padding reducido de #root > div en móvil */
+  }
+}

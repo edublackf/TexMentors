@@ -8,7 +8,7 @@ function LoginPage() {
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
          {/* <img src="/TexMentor-logo.png" alt="TexMentors Logo" style={{ maxWidth: '150px', marginBottom: '10px' }}/>*/}
         <h1>Iniciar Sesión</h1>
-        <p>Bienvenido de vuelta a TexMentors.</p>
+        <p>Bienvenido a TexMentors.</p>
       </div>
       
       <LoginForm />
