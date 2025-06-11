@@ -1,131 +1,135 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Añadimos useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import userService from '../services/userService';
-import { Link } from 'react-router-dom'; // Lo usaremos cuando implementemos Editar
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+// Helper para clases de estado
+const getStatusClass = (statusKey, value) => {
+    if (statusKey === 'rol') {
+        if (value === 'admin') return 'status-completed'; // Celeste para admin
+        if (value === 'mentor') return 'status-active';   // Verde para mentor
+        if (value === 'estudiante') return 'status-pending'; // Naranja para estudiante
+    }
+    if (statusKey === 'isVerified') {
+        return value ? 'status-isVerified-true' : 'status-isVerified-false';
+    }
+    if (statusKey === 'estado') { // Para el estado Eliminado/Activo
+        return value === 'Eliminado' ? 'status-rejected' : 'status-active';
+    }
+    return '';
+};
+
 
 function AdminUsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [actionMessage, setActionMessage] = useState(''); // Para mensajes de éxito/error de acciones
+    // const [error, setError] = useState(''); // Usaremos toast para errores de acción
 
-    // Función para cargar usuarios, la hacemos useCallback para poder usarla en dependencias de useEffect
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
-            setError('');
-            setActionMessage(''); // Limpiar mensajes de acciones previas
+            // setError('');
             const data = await userService.getAllUsers();
             setUsers(data);
         } catch (err) {
-            setError(err.message || 'Error al cargar usuarios. Asegúrate de estar logueado como administrador.');
+            toast.error(err.message || 'Error al cargar usuarios.');
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, []); // useCallback con array de dependencias vacío
+    }, []);
 
     useEffect(() => {
         fetchUsers();
-    }, [fetchUsers]); // Ejecutar fetchUsers cuando el componente se monta o la función fetchUsers cambia (no debería cambiar)
+    }, [fetchUsers]);
 
     const handleDeleteUser = async (userId, userName) => {
-        // Mostrar confirmación
         if (window.confirm(`¿Estás seguro de que quieres eliminar (lógicamente) al usuario "${userName}"?`)) {
             try {
-                setLoading(true); // Podríamos tener un loading específico para la acción
-                setError('');
-                setActionMessage('');
+                setLoading(true); 
                 const response = await userService.deleteUser(userId);
-                setActionMessage(response.message || 'Usuario eliminado exitosamente.');
-                // Volver a cargar la lista de usuarios para reflejar el cambio
-                // O, alternativamente, actualizar el estado local del usuario:
-                // setUsers(prevUsers => 
-                //     prevUsers.map(user => 
-                //         user._id === userId ? { ...user, isDeleted: true, deletedAt: new Date().toISOString() } : user
-                //     )
-                // );
-                // Por simplicidad y consistencia, recargar la lista es más robusto:
+                toast.success(response.message || 'Usuario eliminado exitosamente.');
                 await fetchUsers(); 
             } catch (err) {
-                const errorMessage = err.message || 'Error al eliminar el usuario.';
-                setError(errorMessage);
-                setActionMessage(''); // Limpiar mensaje de éxito si lo hubo antes
+                toast.error(err.message || 'Error al eliminar el usuario.');
                 console.error(err);
             } finally {
-                setLoading(false); // Desactivar loading general
+                setLoading(false);
             }
         }
     };
 
-    if (loading && users.length === 0) { // Mostrar "Cargando usuarios..." solo si no hay usuarios cargados aún
+    if (loading && users.length === 0) {
         return <p>Cargando usuarios...</p>;
-    }
-
-    if (error && users.length === 0) { // Mostrar error solo si no se pudieron cargar usuarios
-        return <p style={{ color: 'red' }}>Error: {error}</p>;
     }
 
     return (
         <div>
             <h2>Gestión de Usuarios</h2>
-            {actionMessage && <p style={{ color: 'green' }}>{actionMessage}</p>}
-            {error && !actionMessage && <p style={{ color: 'red' }}>Error en acción: {error}</p>} {/* Mostrar error de acción si no hay mensaje de éxito */}
+            {/* TODO: Botón para Crear Nuevo Usuario (si se implementa) */}
+            {/* <Link to="/admin-dashboard/users/new"><button>Crear Usuario</button></Link> */}
             
-            {/* TODO: Botón para Crear Nuevo Usuario */}
-            
-            {loading && <p>Actualizando lista...</p>} {/* Mensaje de loading para recarga */}
+            {loading && users.length > 0 && <p>Actualizando lista...</p>}
 
             {users.length === 0 && !loading ? (
                 <p>No hay usuarios registrados o activos.</p>
             ) : (
-                <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Apellido</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Carrera</th>
-                            <th>Ciclo</th>
-                            <th>Verificado</th>
-                            <th>Estado</th> {/* Cambiado de "Eliminado" a "Estado" */}
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user) => (
-                            <tr key={user._id} style={{ backgroundColor: user.isDeleted ? '#ffe0e0' : 'transparent' }}>
-                                <td>{user.nombre}</td>
-                                <td>{user.apellido}</td>
-                                <td>{user.email}</td>
-                                <td>{user.rol}</td>
-                                <td>{user.carrera || '-'}</td>
-                                <td>{user.cicloActual || '-'}</td>
-                                <td>{user.isVerified ? 'Sí' : 'No'}</td>
-                                <td>{user.isDeleted ? 'Eliminado' : 'Activo'}</td> {/* Mostrar "Activo" o "Eliminado" */}
-                                <td>
-                                    <Link to={`/admin-dashboard/users/${user._id}/edit`}>
-                                        <button disabled={user.isDeleted}>
-                                            Editar
-                                        </button>
-                                    </Link>
-                                    <button 
-                                        onClick={() => handleDeleteUser(user._id, `${user.nombre} ${user.apellido}`)} 
-                                        disabled={user.isDeleted || user.rol === 'admin'} // Deshabilitar si ya está eliminado O si es admin
-                                        style={{ 
-                                            marginLeft: '5px', 
-                                            backgroundColor: (user.isDeleted || user.rol === 'admin') ? 'grey' : 'tomato', // Color diferente para deshabilitado
-                                            color: 'white',
-                                            cursor: (user.isDeleted || user.rol === 'admin') ? 'not-allowed' : 'pointer'
-                                        }}
-                                    >
-                                        {user.isDeleted ? 'Ya Eliminado' : 'Eliminar'}
+                <ul className="item-list"> {/* Usamos la clase para la lista */}
+                    {users.map((user) => (
+                        <li key={user._id} className="item-list-row" style={{ opacity: user.isDeleted ? 0.6 : 1 }}>
+                            <div className="item-field" style={{flexBasis: '180px', flexGrow: 0}}> {/* Nombre y Apellido */}
+                                <strong>Nombre:</strong>
+                                <span>{user.nombre} {user.apellido}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '200px'}}>
+                                <strong>Email:</strong>
+                                <span>{user.email}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '100px'}}>
+                                <strong>Rol:</strong>
+                                <span><span className={`status-dot ${getStatusClass('rol', user.rol)}`}></span>{user.rol}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '150px'}}>
+                                <strong>Carrera:</strong>
+                                <span>{user.carrera || '-'}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '80px'}}>
+                                <strong>Ciclo:</strong>
+                                <span>{user.cicloActual || '-'}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '100px'}}>
+                                <strong>Verificado:</strong>
+                                <span><span className={`status-dot ${getStatusClass('isVerified', user.isVerified)}`}></span>{user.isVerified ? 'Sí' : 'No'}</span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '100px'}}>
+                                <strong>Estado:</strong>
+                                <span style={{ fontWeight: 'bold', color: user.isDeleted ? '#e74c3c' : '#2ecc71' }}>
+                                    <span className={`status-dot ${getStatusClass('estado', user.isDeleted ? 'Eliminado' : 'Activo')}`}></span>
+                                    {user.isDeleted ? 'Eliminado' : 'Activo'}
+                                </span>
+                            </div>
+                            <div className="item-actions">
+                                <Link to={`/admin-dashboard/users/${user._id}/edit`}>
+                                    <button disabled={user.isDeleted} title="Editar">
+                                        {/* Podrías usar un ícono de lápiz aquí */}
+                                        Editar 
                                     </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                </Link>
+                                <button 
+                                    onClick={() => handleDeleteUser(user._id, `${user.nombre} ${user.apellido}`)} 
+                                    disabled={user.isDeleted || user.rol === 'admin'}
+                                    title={user.isDeleted ? 'Usuario ya eliminado' : (user.rol === 'admin' ? 'No se puede eliminar admin' : 'Eliminar')}
+                                    style={{ 
+                                        backgroundColor: (user.isDeleted || user.rol === 'admin') ? '#bdc3c7' : '#e74c3c', /* Rojo para eliminar */
+                                    }}
+                                >
+                                    {/* Podrías usar un ícono de basura aquí */}
+                                    {user.isDeleted ? 'Eliminado' : 'Eliminar'}
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

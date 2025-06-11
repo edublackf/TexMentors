@@ -1,119 +1,247 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import mentorshipRequestService from '../services/mentorshipRequestService';
-// import { useAuth } from '../contexts/AuthContext'; // Para verificar si el usuario logueado es el dueño
+import mentorshipSessionService from '../services/mentorshipSessionService';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
+
+// --- Funciones Helper (pueden ir fuera del componente) ---
+const formatStatusText = (status, type = 'request') => {
+    if (!status) return 'Desconocido';
+    const requestStatusMap = {
+        'pendiente': 'Pendiente',
+        'aceptada_mentor': 'Aceptada por Mentor',
+        'rechazada_mentor': 'Rechazada por Mentor',
+        'rechazada_admin': 'Rechazada por Admin',
+        'en_progreso': 'En Progreso',
+        'completada': 'Finalizada',
+        'cancelada_estudiante': 'Cancelada por Ti',
+        'cancelada_admin': 'Cancelada por Admin',
+        'cancelada_mentor': 'Cancelada por Mentor'
+    };
+    const sessionStatusMap = {
+        'propuesta': 'Propuesta',
+        'confirmada': 'Confirmada',
+        'realizada': 'Realizada',
+        'cancelada_mentor': 'Cancelada por Mentor',
+        'cancelada_estudiante': 'Cancelada por Ti',
+        'reprogramar_mentor': 'Reprogramación (Mentor)',
+        'reprogramar_estudiante': 'Reprogramación (Estudiante)'
+    };
+    const roleMap = {
+        'estudiante': 'Estudiante',
+        'mentor': 'Mentor',
+        'admin': 'Admin'
+    };
+
+    let map;
+    if (type === 'request') map = requestStatusMap;
+    else if (type === 'session') map = sessionStatusMap;
+    else if (type === 'rol') map = roleMap;
+    else map = {};
+    
+    return map[status] || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const getStatusColorClass = (status) => {
+    if (!status) return '#7f8c8d';
+    if (status.includes('completada') || status.includes('realizada') || status.includes('aceptada')) return '#3498db';
+    if (status.includes('cancelada') || status.includes('rechazada')) return '#e74c3c';
+    if (status.includes('pendiente') || status.includes('propuesta')) return '#f39c12';
+    if (status.includes('progreso') || status.includes('confirmada')) return '#2ecc71';
+    if (status.includes('reprogramar')) return '#9b59b6';
+    return '#7f8c8d';
+};
+// --- Fin Funciones Helper ---
+
 
 function StudentMentorshipRequestDetailPage() {
-    const { requestId } = useParams(); // Obtiene el :requestId de la URL
-    // const { currentUser } = useAuth(); // Para verificar si el usuario actual es el dueño
+    const { requestId } = useParams();
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
 
     const [requestDetails, setRequestDetails] = useState(null);
+    const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [sessionsLoading, setSessionsLoading] = useState(false); // Estado para carga de sesiones
 
-    const fetchRequestDetails = useCallback(async () => {
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    };
+
+    const fetchRequestAndSessions = useCallback(async () => {
         try {
-            setLoading(true);
-            setError('');
-            const data = await mentorshipRequestService.getRequestById(requestId);
-            
-            // Doble verificación (aunque el backend debería manejar permisos):
-            // Asegurarse de que el estudiante solo vea sus propias solicitudes si accedió por URL directa.
-            // Nota: currentUser podría no estar disponible inmediatamente si la página se carga directamente.
-            // El backend ya protege este endpoint, así que esta verificación en frontend es una capa extra.
-            // if (currentUser && data.studentUser?._id !== currentUser.id && currentUser.rol !== 'admin') {
-            //     setError('No tienes permiso para ver esta solicitud.');
-            //     setRequestDetails(null);
-            //     setLoading(false);
-            //     return;
-            // }
-            setRequestDetails(data);
+            setLoading(true); // Loading general para la página
+            setSessionsLoading(true); // Inicia carga de sesiones también
+
+            const requestData = await mentorshipRequestService.getRequestById(requestId);
+            setRequestDetails(requestData);
+
+            if (requestData && ['aceptada_mentor', 'en_progreso', 'realizada', 'reprogramar_mentor', 'reprogramar_estudiante', 'confirmada', 'propuesta'].includes(requestData.status) ) {
+                const sessionsData = await mentorshipSessionService.getSessionsForRequest(requestId);
+                setSessions(sessionsData);
+            } else if (requestData) {
+                setSessions([]);
+            }
         } catch (err) {
-            setError(err.message || `Error al cargar los detalles de la solicitud ${requestId}.`);
+            toast.error(err.message || `Error al cargar detalles de la solicitud.`);
             setRequestDetails(null);
+            setSessions([]);
             console.error(err);
         } finally {
             setLoading(false);
+            setSessionsLoading(false);
         }
-    }, [requestId /*, currentUser */]); // Añadir currentUser si se usa la verificación extra
+    }, [requestId]);
 
     useEffect(() => {
-        fetchRequestDetails();
-    }, [fetchRequestDetails]);
+        fetchRequestAndSessions();
+    }, [fetchRequestAndSessions]);
 
-    if (loading) {
-        return <p>Cargando detalles de la solicitud...</p>;
-    }
+    const handleConfirmSession = async (sessionId, confirmedTime) => {
+        if (!window.confirm(`¿Confirmar la sesión para ${formatDate(confirmedTime.startTime)} - ${formatDate(confirmedTime.endTime)}?`)) return;
+        
+        try {
+            // Podrías tener un loading específico para esta acción si quieres deshabilitar solo este botón
+            await mentorshipSessionService.updateSession(sessionId, {
+                confirmedDateTime: { // Enviar como objeto
+                    startTime: confirmedTime.startTime,
+                    endTime: confirmedTime.endTime
+                },
+                status: 'confirmada'
+            });
+            toast.success('Sesión confirmada exitosamente.');
+            fetchRequestAndSessions(); 
+        } catch (err) {
+            toast.error(err.message || 'Error al confirmar la sesión.');
+            console.error(err);
+        }
+    };
+    
+    const canStudentProposeSession = () => {
+        if (!requestDetails || !currentUser || !sessions) return false;
+        const activeRequestStatus = ['aceptada_mentor', 'en_progreso', 'reprogramar_mentor'].includes(requestDetails.status);
+        if (!activeRequestStatus) return false;
 
-    if (error) {
-        return (
-            <div>
-                <p style={{ color: 'red' }}>Error: {error}</p>
-                <Link to="/student-dashboard">Volver a Mis Solicitudes</Link>
-            </div>
-        );
-    }
+        const proposedByStudentSessions = sessions.filter(s => s.status === 'propuesta' && s.proposedBy?._id === currentUser.id);
+        if (proposedByStudentSessions.length > 0) return false; // Estudiante ya propuso y está esperando
 
-    if (!requestDetails) {
-        return (
-            <div>
-                <p>No se encontraron detalles para esta solicitud.</p>
-                <Link to="/student-dashboard">Volver a Mis Solicitudes</Link>
-            </div>
-        );
-    }
+        const lastRelevantSession = sessions
+            .filter(s => ['propuesta', 'reprogramar_mentor', 'reprogramar_estudiante', 'confirmada'].includes(s.status))
+            .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
-    // Formatear fechas para mejor lectura
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleString();
+        if (!lastRelevantSession || lastRelevantSession.status === 'reprogramar_mentor' || lastRelevantSession.status === 'confirmada') {
+            return true; 
+        }
+        return false; 
     };
 
+
+    if (loading) return <div className="ticket-container" style={{textAlign: 'center', padding: '50px'}}><p>Cargando detalles...</p></div>;
+    if (!requestDetails && !loading) return <div className="ticket-container" style={{textAlign: 'center', padding: '50px'}}><p>Solicitud no encontrada.</p><Link to="/student-dashboard">Volver</Link></div>;
+
     return (
-        <div>
-            <h2>Detalles de la Solicitud de Mentoría</h2>
-            <Link to="/student-dashboard" style={{ marginBottom: '20px', display: 'inline-block' }}>
-                ← Volver a Mis Solicitudes
-            </Link>
-            
-            <h3>{requestDetails.title}</h3>
-            <p><strong>Tipo de Ayuda:</strong> {requestDetails.helpType?.name || 'N/A'}</p>
-            <p><strong>Estado:</strong> <span style={{ fontWeight: 'bold', color: requestDetails.status === 'completada' ? 'green' : requestDetails.status.includes('cancelada') || requestDetails.status.includes('rechazada') ? 'red' : 'orange' }}>
-                {requestDetails.status}
-            </span></p>
-            <p><strong>Descripción:</strong></p>
-            <p style={{ whiteSpace: 'pre-wrap', border: '1px solid #eee', padding: '10px', background: '#f9f9f9' }}>
-                {requestDetails.description}
-            </p>
-            <p><strong>Tu Disponibilidad Indicada:</strong> {requestDetails.studentAvailability || 'No especificada'}</p>
-            
-            <h4>Mentor Asignado:</h4>
-            {requestDetails.mentorUser ? (
-                <div>
-                    <p><strong>Nombre:</strong> {requestDetails.mentorUser.nombre} {requestDetails.mentorUser.apellido}</p>
-                    <p><strong>Email:</strong> {requestDetails.mentorUser.email}</p>
-                    {/* No mostrar notas internas del mentor al estudiante a menos que sea un requisito */}
+        <div className="ticket-container">
+            <div className="ticket-header">
+                <h2>{requestDetails.title}</h2>
+                <span className="request-status" style={{ color: getStatusColorClass(requestDetails.status) }}>
+                    Estado: {formatStatusText(requestDetails.status, 'request')}
+                </span>
+            </div>
+
+            <div className="ticket-body">
+                <div className="ticket-section">
+                    <h4>Información de la Solicitud</h4>
+                    <div className="ticket-item"><strong>Tipo de Ayuda:</strong><span>{requestDetails.helpType?.name || 'N/A'}</span></div>
+                    <div className="ticket-item"><strong>Tu Disponibilidad:</strong><span>{requestDetails.studentAvailability || 'No especificada'}</span></div>
+                    <div className="ticket-item"><strong>Fecha Creación:</strong><span>{formatDate(requestDetails.createdAt)}</span></div>
+                    <div className="ticket-item"><strong>Descripción:</strong></div>
+                    <div className="description-block">{requestDetails.description}</div>
                 </div>
-            ) : (
-                <p>Aún no se ha asignado un mentor.</p>
-            )}
 
-            {requestDetails.internalNotes && (requestDetails.currentUser?.rol === 'admin' || requestDetails.currentUser?.rol === 'mentor') && ( // Solo para admin/mentor
-                 <div>
-                    <h4>Notas Internas (Solo visible para Admin/Mentor):</h4>
-                    <p style={{ whiteSpace: 'pre-wrap', border: '1px solid #eee', padding: '10px', background: '#f0f0ff' }}>
-                        {requestDetails.internalNotes}
-                    </p>
+                <div className="ticket-section">
+                    <h4>Mentor Asignado</h4>
+                    {requestDetails.mentorUser ? (
+                        <>
+                            <div className="ticket-item"><strong>Nombre:</strong><span>{requestDetails.mentorUser.nombre} {requestDetails.mentorUser.apellido}</span></div>
+                            <div className="ticket-item"><strong>Email:</strong><span>{requestDetails.mentorUser.email}</span></div>
+                        </>
+                    ) : (
+                        <p style={{textAlign:'center', fontStyle: 'italic'}}>Aún no se ha asignado un mentor.</p>
+                    )}
                 </div>
-            )}
+                
+                {['aceptada_mentor', 'en_progreso', 'realizada', 'reprogramar_mentor', 'reprogramar_estudiante', 'confirmada', 'propuesta'].includes(requestDetails.status) && (
+                <div className="sessions-highlight-section">
+                    <h4>Sesiones</h4>
+                   {/* {canStudentProposeSession() && (
+     <div className="propose-session-btn-container">
+        <Link to={`/student-dashboard/requests/${requestId}/propose-session`}>
+            <button>Proponer Nuevo Horario</button>
+        </Link>
+     </div>
+)} */}
 
+                    {sessionsLoading && <p style={{textAlign:'center'}}>Cargando sesiones...</p>}
+                    
+                    {!sessionsLoading && sessions.length === 0 && 
+                        <p style={{textAlign:'center', fontStyle: 'italic'}}>No hay sesiones propuestas o programadas.</p>
+                    }
 
-            <p><strong>Fecha de Creación:</strong> {formatDate(requestDetails.createdAt)}</p>
-            <p><strong>Última Actualización:</strong> {formatDate(requestDetails.updatedAt)}</p>
+                    {sessions.length > 0 && (
+                        <ul className="sessions-list">
+                            {sessions.map(session => (
+                                <li key={session._id} className="session-card">
+                                    <p><strong>Estado:</strong> <span style={{fontWeight: 'bold', color: getStatusColorClass(session.status)}}>{formatStatusText(session.status, 'session')}</span></p>
+                                    <p><strong>Propuesta por:</strong> {session.proposedBy?.nombre} {session.proposedBy?.apellido} ({formatStatusText(session.proposedBy?.rol, 'rol')})</p>
+                                    
+                                    {session.status === 'propuesta' && (
+                                        <div>
+                                            <strong>Horarios Propuestos:</strong>
+                                            <ul>
+                                                {session.proposedDateTimes.map((pdt, index) => (
+                                                    <li key={index} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0'}}>
+                                                        <span>{formatDate(pdt.startTime)} - {formatDate(pdt.endTime)}</span>
+                                                        {currentUser && session.proposedBy?._id !== currentUser.id && (
+                                                            <button onClick={() => handleConfirmSession(session._id, { startTime: pdt.startTime, endTime: pdt.endTime })}>
+                                                                Confirmar
+                                                            </button>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
 
-            {/* Aquí podrían ir acciones si el estudiante puede hacer algo desde esta vista, 
-                como cancelar si el estado lo permite (aunque ya lo tiene en la tabla) */}
-        </div>
+                                    {session.confirmedDateTime?.startTime && (
+                                        <p><strong>Confirmado:</strong> {formatDate(session.confirmedDateTime.startTime)} - {formatDate(session.confirmedDateTime.endTime)}</p>
+                                    )}
+                                    
+                                    <p><strong>Lugar/Enlace:</strong> {session.locationOrLink || 'No especificado'}</p>
+                                    
+                                    {session.status === 'realizada' && (
+                                        <>
+                                            {session.summaryMentor && <p><strong>Resumen Mentor:</strong> <span className="text-block" style={{display:'block'}}>{session.summaryMentor}</span></p>}
+                                            {session.feedbackStudent ? 
+                                                <p><strong>Tu Feedback:</strong> <span className="text-block" style={{display:'block'}}>{session.feedbackStudent}</span></p> :
+                                                (currentUser && currentUser.id === session.student?._id && <div style={{textAlign:'right'}}><button onClick={() => alert('Implementar dar feedback!')}>Dar Feedback</button></div>)
+                                            }
+                                        </>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                )}
+                 <div style={{textAlign: 'center', marginTop: '20px'}}>
+                    <Link to="/student-dashboard">
+                        <button type="button" style={{backgroundColor: '#7f8c8d'}}>Volver a Mis Solicitudes</button>
+                    </Link>
+                 </div>
+            </div> {/* Fin ticket-body */}
+        </div> /* Fin ticket-container */
     );
 }
 

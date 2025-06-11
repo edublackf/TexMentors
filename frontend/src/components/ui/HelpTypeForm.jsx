@@ -31,7 +31,7 @@ function HelpTypeForm({ onSubmit, initialData = null, isEditMode = false, loadin
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="form-card">
             <div>
                 <label htmlFor="name">Nombre del Tipo de Ayuda:</label>
                 <input 

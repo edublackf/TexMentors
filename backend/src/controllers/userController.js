@@ -151,3 +151,52 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Error del servidor al eliminar el usuario.', error: error.message });
     }
 };
+
+exports.adminCreateUser = async (req, res) => {
+    const { nombre, apellido, email, password, rol, carrera, cicloActual, especialidades, isVerified } = req.body;
+
+    // Validaciones básicas
+    if (!nombre || !apellido || !email || !password || !rol) {
+        return res.status(400).json({ message: 'Nombre, apellido, email, contraseña y rol son obligatorios.' });
+    }
+    if (!['estudiante', 'mentor', 'admin'].includes(rol)) {
+        return res.status(400).json({ message: 'Rol inválido.' });
+    }
+
+    try {
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'El email ya está registrado.' });
+        }
+
+        const user = await User.create({
+            nombre,
+            apellido,
+            email,
+            password, // Se hashea en el pre-save
+            rol,      // El admin SÍ puede especificar el rol
+            carrera: carrera || '',
+            cicloActual: cicloActual || '',
+            especialidades: rol === 'mentor' ? (especialidades || []) : [], // Solo para mentores
+            isVerified: isVerified !== undefined ? isVerified : true // Admin puede decidir si verificarlo de inmediato
+        });
+
+        // No es necesario generar y devolver un token aquí, solo confirmar creación.
+        // Quitamos la contraseña de la respuesta por seguridad.
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(201).json({
+            message: `Usuario ${rol} creado exitosamente por el administrador.`,
+            user: userResponse
+        });
+
+    } catch (error) {
+        console.error('Error en adminCreateUser:', error);
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: messages.join('. ') });
+        }
+        res.status(500).json({ message: 'Error del servidor al crear el usuario.', error: error.message });
+    }
+};

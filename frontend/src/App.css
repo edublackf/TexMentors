@@ -1,42 +1,574 @@
-#root {
-  max-width: 1280px;
+/* Reseteo básico y configuración de fuente */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f4f7f9; /* Un blanco ligeramente grisáceo para el fondo general */
+  color: #333; /* Color de texto principal */
+  line-height: 1.6;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Contenedor principal de la aplicación para centrar y dar márgenes */
+/* Puedes aplicar una clase a tu div raíz en App.jsx si es necesario, o estilizar 'div#root' */
+#root > div { /* Asumiendo que tu ToastContainer está dentro de este div en App.jsx */
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 20px;
+  background-color: #ffffff; /* Fondo blanco para el contenido principal */
+  min-height: 100vh; /* Asegurar que ocupe toda la altura */
+  box-shadow: 0 0 10px rgba(0,0,0,0.05); /* Sombra sutil */
+}
+
+/* Títulos */
+h1, h2, h3, h4, h5, h6 {
+  color: #2c3e50; /* Un azul oscuro/gris para títulos */
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.8em; color: #56bbff; } /* Celeste para H2 como color de acento */
+
+/* Enlaces */
+a {
+  color: #3498db; /* Celeste */
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  color: #2980b9; /* Celeste más oscuro */
+}
+
+/* Botones */
+button {
+  background-color: #3498db; /* Celeste */
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s ease-in-out;
+  margin-right: 5px; /* Espacio entre botones */
+  margin-bottom: 5px; /* Espacio si se apilan */
+}
+button:hover {
+  background-color: #3a98d6; /* Celeste más oscuro */
+}
+button:disabled {
+  background-color: #bdc3c7; /* Gris para deshabilitado */
+  cursor: not-allowed;
+}
+button[style*="background-color: tomato"], 
+button[style*="background-color: salmon"] { /* Estilos específicos para botones de peligro si los tienes inline */
+    /* Puedes definir clases o ser más específico si quieres sobreescribir */
+}
+button[style*="background-color: lightgreen"] {
+    /* ... */
+}
+
+
+/* Formularios */
+form div {
+  margin-bottom: 15px;
+}
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="datetime-local"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Importante para que el padding no aumente el ancho */
+  font-size: 1em;
+}
+input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+textarea {
+  resize: vertical; /* Permitir redimensionar verticalmente */
+}
+
+/* Tablas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+th {
+  background-color: #eaf4fc; /* Un celeste muy pálido para cabeceras de tabla */
+  color: #3498db; /* Celeste para texto de cabecera */
+  font-weight: bold;
+}
+tbody tr:nth-child(even) {
+  background-color: #f9f9f9; /* Rayas para mejor legibilidad */
+}
+tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Navbar (simple) */
+nav ul {
+  list-style-type: none;
+  padding: 0;
+  
+  display: flex; /* Para poner elementos en línea */
+  flex-wrap: wrap; /* Permitir que se envuelvan en pantallas pequeñas */
+
+  
+
+}
+nav ul li {
+  /* margin-right: 20px; (reemplazado por gap) */
+}
+
+
+
+/* Responsividad Básica */
+/* Para tablas en pantallas pequeñas */
+@media screen and (max-width: 768px) {
+  table, thead, tbody, th, td, tr {
+    display: block; /* Convertir tabla en bloques */
+  }
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px; /* Ocultar cabeceras originales */
+  }
+  tr {
+    border: 1px solid #ccc;
+    margin-bottom: 10px; /* Espacio entre "filas" de bloque */
+  }
+  td {
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 50%; /* Espacio para la "cabecera" del dato */
+    white-space: normal;
+    text-align: right; /* Alinear texto a la derecha */
+  }
+  td:before {
+    /* Usar el atributo data-label para las cabeceras */
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    content: attr(data-label); /* Necesitarás añadir data-label a tus <td> */
+    font-weight: bold;
+    text-align: left; /* Alinear cabecera a la izquierda */
+  }
+
+  /* Ajustar el nav para pantallas pequeñas */
+  nav ul {
+    flex-direction: column; /* Apilar items verticalmente */
+    align-items: flex-start; /* Alinear al inicio */
+    gap: 10px;
+  }
+  nav ul li {
+    margin-right: 0;
+    width: 100%; /* Que cada item ocupe el ancho */
+  }
+  nav ul li a, nav ul li button, nav ul li span {
+    display: block; /* Que los enlaces/botones ocupen el ancho */
+    padding: 8px 0;
+  }
+}
+
+/* Estilos para Listas tipo Tarjeta/Fila (Inspirado en la imagen) */
+.item-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.item-list-row {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0; /* Borde más sutil que el de tabla */
+  border-radius: 8px; /* Bordes redondeados */
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap; /* Para responsividad */
+  align-items: center;
+  gap: 10px; /* Espacio entre elementos dentro de la fila */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra sutil */
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.item-list-row:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.item-list-row .item-field {
+  flex-grow: 1; /* Por defecto, los campos crecen */
+  min-width: 120px; /* Ancho mínimo antes de envolver */
+  padding: 5px 0;
+}
+
+.item-list-row .item-field strong { /* Para las "etiquetas" */
+  display: block;
+  font-size: 0.8em;
+  color: #7f8c8d; /* Gris para etiquetas */
+  margin-bottom: 3px;
+  /* Esto es para responsividad si queremos mostrar etiquetas encima en móvil */
+}
+
+.item-list-row .item-actions {
+  flex-grow: 0;
+  flex-shrink: 0; /* Que no se encoja */
+  margin-left: auto; /* Empujar acciones a la derecha */
+  display: flex;
+  gap: 8px;
+}
+
+/* Colores de estado (inspirado en la imagen) */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.status-pending { background-color: #f39c12; } /* Naranja */
+.status-active, .status-aceptada_mentor, .status-en_progreso, .status-confirmada { background-color: #2ecc71; } /* Verde */
+.status-completed, .status-realizada { background-color: #3498db; } /* Celeste */
+.status-rejected, .status-cancelled, .status-eliminado { background-color: #e74c3c; } /* Rojo */
+.status-isVerified-true { background-color: #2ecc71; }
+.status-isVerified-false { background-color: #e74c3c; }
+
+
+/* Responsividad para las filas de item */
+@media screen and (max-width: 768px) {
+  .item-list-row {
+    flex-direction: column;
+    align-items: flex-start; /* Alinear items al inicio */
+    padding: 15px;
+  }
+  .item-list-row .item-field {
+    width: 100%; /* Que cada campo ocupe el ancho */
+    min-width: 0; /* Resetear min-width */
+    border-bottom: 1px dashed #eee; /* Separador sutil entre campos en móvil */
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+  .item-list-row .item-field:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+  }
+  .item-list-row .item-actions {
+    width: 100%; /* Acciones ocupan el ancho */
+    margin-left: 0; /* Resetear margen */
+    margin-top: 10px; /* Espacio arriba */
+    justify-content: flex-end; /* Alinear botones a la derecha */
+  }
+   /* En móvil, la etiqueta fuerte podría ir arriba */
+  .item-list-row .item-field strong {
+    display: inline-block; /* O block si prefieres que siempre esté arriba */
+    margin-right: 5px; /* Espacio entre etiqueta y valor */
+    margin-bottom: 0;
+    width: auto; /* Ajustar ancho */
+  }
+  .item-list-row .item-field span.value { /* Envolver el valor en un span si es necesario */
+    /* Estilos para el valor si es necesario */
+  }
+}
+
+.form-card {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  max-width: 600px; /* Limitar ancho del formulario */
+  margin: 20px auto; /* Centrar el formulario */
+}
+
+#root > div {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px; /* Padding para desktop */
+  background-color: #ffffff; 
+  min-height: 100vh; 
+  box-shadow: 0 0 10px rgba(0,0,0,0.05); 
+}
+
+@media screen and (max-width: 768px) {
+  #root > div {
+    padding: 10px; /* Padding reducido para móvil */
+  }
+  /* ... otros estilos responsivos que ya tienes ... */
+}
+
+
+nav ul { /* Estilos para la lista de enlaces del menú */
+  list-style-type: none;
+  padding: 0;
+  margin: 0; /* Resetear margen si lo tenía */
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 15px; 
+  /* Ya no necesita border-bottom ni padding-bottom aquí */
+}
+
+.detail-section {
+  background-color: #ffffff; /* Fondo blanco para la sección */
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.07); /* Sombra sutil */
+  border-left: 5px solid #3498db; /* Borde de acento celeste */
+}
+
+.detail-section h3, .detail-section h4 {
+  margin-top: 0; /* Quitar margen superior si es el primer elemento */
+  color: #3498db; /* Celeste para los títulos de sección */
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+
+.detail-item {
+  margin-bottom: 12px;
+  display: flex; /* Para alinear etiqueta y valor si se desea */
+  flex-wrap: wrap; /* Para responsividad */
+}
+
+.detail-item strong {
+  display: inline-block;
+  min-width: 180px; /* Ancho mínimo para la etiqueta, ajustar según necesidad */
+  color: #555;
+  margin-right: 10px; /* Espacio entre etiqueta y valor */
+}
+.detail-item span, .detail-item div {
+  flex: 1; /* Para que el valor o contenido ocupe el espacio restante */
+}
+
+/* Para la descripción o notas que son bloques de texto */
+.text-block {
+  white-space: pre-wrap; /* Respetar saltos de línea y espacios */
+  border: 1px solid #e0e0e0;
+  padding: 10px 15px;
+  background-color: #f9f9f9; /* Fondo ligeramente diferente */
+  border-radius: 4px;
+  line-height: 1.7;
+}
+
+/* Estilos para la lista de sesiones (si se usa ul/li) */
+.sessions-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.session-item {
+  background-color: #fdfdfd; /* Un blanco un poco diferente para cada sesión */
+  border: 1px solid #e8e8e8;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+.session-item h5 { /* Título para cada sesión, ej. "Propuesta de Horario 1" */
+    margin-top: 0;
+    color: #2980b9; /* Celeste más oscuro */
+}
+
+/* Botones dentro de las secciones de detalle */
+.detail-section button, .session-item button {
+    margin-top: 5px; /* Un poco de espacio si están debajo de texto */
+}
+/* En index.css o App.css */
+.status-dot {
+  display: inline-block; /* Para que esté en la misma línea que el texto */
+  width: 10px;          /* Ancho del punto */
+  height: 10px;         /* Alto del punto */
+  border-radius: 50%;   /* Para hacerlo circular */
+  margin-right: 8px;    /* Espacio entre el punto y el texto */
+  vertical-align: middle; /* Para alinearlo bien con el texto */
+}
+.detail-page-container {
+  max-width: 900px; /* Elige un ancho máximo que te guste para los detalles */
+  margin: 20px auto; /* Centra el contenedor y añade un margen superior/inferior */
+  padding: 20px; /* Padding interno si lo deseas, o puedes quitarlo si los .detail-section ya tienen */
+  /* background-color: #fdfdfd; */ /* Un fondo ligeramente diferente si quieres destacarlo, opcional */
+  /* border-radius: 8px; */ /* Bordes redondeados si quieres, opcional */
+  /* box-shadow: 0 2px 8px rgba(0,0,0,0.05); */ /* Sombra sutil, opcional */
+}
+
+/* Si quieres que los títulos H2 dentro de estas páginas también se centren */
+.detail-page-container > h2 {
+    text-align: center;
+    margin-bottom: 30px; /* Más espacio después del título principal de la página */
+}
+
+.main-detail-card { /* Para la tarjeta principal que engloba todo */
+  background-color: #ffffff;
+  padding: 25px 30px; /* Más padding */
+  border-radius: 10px; /* Bordes más redondeados */
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Sombra un poco más pronunciada */
+  /* No necesita borde izquierdo si las secciones internas lo tendrán o si es la única tarjeta */
+}
+
+.detail-section-title { /* Título para secciones DENTRO de la tarjeta principal */
+  font-size: 1.3em; /* Un poco más grande para destacar la sección */
+  color: #2980b9; /* Celeste más oscuro para subtítulos de sección */
+  margin-top: 25px;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eaf4fc; /* Borde celeste muy pálido */
+}
+.detail-section-title:first-child { /* Para el primer título de sección */
+    margin-top: 0;
+}
+
+.ticket-container {
+  max-width: 700px; /* Ancho del ticket */
+  margin: 30px auto;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
+}
+
+.ticket-header {
+  background-color: #3498db; /* Celeste principal */
+  color: white;
+  padding: 20px;
   text-align: center;
 }
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+.ticket-header h2 { /* Título principal del ticket */
+  margin: 0;
+  font-size: 1.8em;
+  color: white; /* Sobreescribir color de h2 global si es necesario */
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.ticket-header .request-status {
+  font-size: 1em;
+  opacity: 0.9;
+  margin-top: 5px;
+  display: block; /* Para que ocupe su línea */
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.ticket-body {
+  padding: 20px 25px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.ticket-section {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #e0e0e0; /* Separador tipo ticket */
+}
+.ticket-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.ticket-section h4 {
+  font-size: 1.1em;
+  color: #2980b9; /* Celeste más oscuro para subtítulos de sección */
+  margin-top: 0;
+  margin-bottom: 12px;
 }
 
-.card {
-  padding: 2em;
+.ticket-item { /* Reemplaza a .detail-item para este estilo */
+  display: flex;
+  justify-content: space-between; /* Para poner etiqueta a la izq y valor a la der */
+  margin-bottom: 8px;
+  font-size: 0.95em;
+}
+.ticket-item strong { /* Etiqueta */
+  color: #555;
+  flex-basis: 40%; /* Ancho para la etiqueta */
+  text-align: left;
+}
+.ticket-item span, .ticket-item div.value { /* Valor */
+  color: #333;
+  flex-basis: 58%; /* Ancho para el valor */
+  text-align: right;
+  word-break: break-word; /* Para evitar desbordes con emails largos o enlaces */
 }
 
-.read-the-docs {
-  color: #888;
+.description-block { /* Para la descripción de la solicitud */
+  margin-top: 5px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.95em;
+  line-height: 1.6;
+  text-align: left; /* Asegurar alineación izquierda para párrafos largos */
+}
+
+/* Estilos específicos para la sección de sesiones dentro del ticket */
+.sessions-highlight-section {
+  background-color: #eaf4fc; /* Un fondo celeste muy pálido para destacar */
+  margin: -20px -25px 25px -25px; /* Extender al ancho del padding del ticket-body */
+  padding: 20px 25px;
+  border-bottom: 1px dashed #cce0f0; /* Separador más fuerte */
+  border-top: 1px dashed #cce0f0;
+}
+.sessions-highlight-section h4 {
+  color: #3498db; /* Celeste */
+}
+
+.session-card { /* Reemplaza a .session-item */
+  background-color: #ffffff;
+  border: 1px solid #d0e0ed;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+.session-card p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+.session-card strong { /* Etiqueta dentro de la tarjeta de sesión */
+    min-width: auto; /* Resetear min-width de .ticket-item strong si se usa dentro */
+    margin-right: 5px;
+}
+.session-card ul {
+    list-style-type: none;
+    padding-left: 15px;
+    font-size: 0.9em;
+}
+.session-card ul li {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Botón de Proponer Sesión */
+.propose-session-btn-container {
+    text-align: center; /* Centrar el botón */
+    margin-top: 15px;
+}
+.ticket-header .request-status {
+  font-size: 1em;
+  opacity: 0.9;
+  margin-top: 5px;
+  display: block;
+  color: white !important; /* Usar !important si es necesario para sobreescribir otros estilos */
 }

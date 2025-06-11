@@ -1,29 +1,60 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom'; // useNavigate para acciones
+import { Link, useNavigate } from 'react-router-dom';
 import mentorshipRequestService from '../services/mentorshipRequestService';
-import { useAuth } from '../contexts/AuthContext'; // Para obtener el ID del mentor actual
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
+
+// --- Funciones Helper (puedes moverlas a un archivo utils.js si las usas en múltiples sitios) ---
+const formatStatusText = (status, type = 'request') => { /* ... como la definimos antes ... */
+    if (!status) return 'Desconocido';
+    const requestStatusMap = { /* ... */ };
+    const sessionStatusMap = { /* ... */ };
+    const roleMap = { /* ... */ };
+    let map;
+    if (type === 'request') map = requestStatusMap;
+    else if (type === 'session') map = sessionStatusMap;
+    else if (type === 'rol') map = roleMap;
+    else map = {};
+    return map[status] || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const getStatusColorClass = (status) => { /* ... como la definimos antes ... */
+    if (!status) return '#7f8c8d';
+    if (status.includes('completada') || status.includes('realizada') || status.includes('aceptada')) return '#3498db';
+    if (status.includes('cancelada') || status.includes('rechazada')) return '#e74c3c';
+    if (status.includes('pendiente') || status.includes('propuesta')) return '#f39c12';
+    if (status.includes('progreso') || status.includes('confirmada')) return '#2ecc71';
+    if (status.includes('reprogramar')) return '#9b59b6';
+    return '#7f8c8d';
+};
+
+const getRequestStatusDotClass = (status) => { // Similar a getStatusClass pero para los puntos de color CSS
+    if (!status) return 'status-default';
+    if (status.includes('completada') || status.includes('realizada') || status.includes('aceptada')) return 'status-completed';
+    if (status.includes('cancelada') || status.includes('rechazada')) return 'status-rejected';
+    if (status.includes('pendiente') || status.includes('propuesta')) return 'status-pending';
+    if (status.includes('progreso') || status.includes('confirmada')) return 'status-active';
+    if (status.includes('reprogramar')) return 'status-reprogramar'; // Necesitarías definir .status-reprogramar en CSS
+    return 'status-default';
+};
+// --- Fin Funciones Helper ---
+
 
 function MentorDashboardPage() {
     const { currentUser } = useAuth();
+    const navigate = useNavigate(); // Para navegar a detalles
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [actionMessage, setActionMessage] = useState('');
-    const [actionError, setActionError] = useState(''); // Errores específicos de acciones
+    // const [error, setError] = useState(''); // Usaremos toast
 
     const fetchMentorRequests = useCallback(async () => {
-        if (!currentUser) return; // No hacer nada si currentUser no está listo
+        if (!currentUser) return;
         try {
             setLoading(true);
-            setError('');
-            setActionMessage('');
-            setActionError('');
-            // El backend filtra por el mentor logueado:
-            // Muestra las asignadas a él O las pendientes sin asignar.
-            const data = await mentorshipRequestService.getAllRequests();
+            const data = await mentorshipRequestService.getAllRequests(); // Backend filtra para mentor
             setRequests(data);
         } catch (err) {
-            setError(err.message || 'Error al cargar tus solicitudes de mentoría.');
+            toast.error(err.message || 'Error al cargar tus asignaciones de mentoría.');
             console.error(err);
         } finally {
             setLoading(false);
@@ -35,119 +66,126 @@ function MentorDashboardPage() {
     }, [fetchMentorRequests]);
 
     const handleUpdateRequestStatus = async (requestId, newStatus, requestTitle) => {
-        if (newStatus === 'aceptada_mentor' || newStatus === 'rechazada_mentor') {
-            if (!window.confirm(`¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' ? 'aceptar' : 'rechazar'}" la solicitud "${requestTitle}"?`)) {
-                return;
-            }
-        }
-        // Podríamos añadir más confirmaciones para otros estados si es necesario.
+        // ... (lógica de confirmación y llamada al servicio como la teníamos, usando toast) ...
+        const confirmAction = (newStatus === 'aceptada_mentor' || newStatus === 'rechazada_mentor') ? 
+            window.confirm(`¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' ? 'aceptar' : 'rechazar'}" la solicitud "${requestTitle}"?`)
+            : true; // No pedir confirmación para otros cambios de estado desde aquí (o añadir si es necesario)
+
+        if (!confirmAction) return;
 
         try {
-            setLoading(true); // Podríamos tener un loading específico para esta acción por fila
-            setActionMessage('');
-            setActionError('');
-            
-            const updateData = { status: newStatus };
-            // Si es aceptada_mentor y la solicitud no tenía mentor, el backend debería asignarlo
-            // basado en el currentUser.id del mentor.
-            // Nuestra lógica actual en el backend para updateMentorshipRequest no asigna
-            // automáticamente el mentor si el mentorUserId es null y el status cambia a aceptada_mentor
-            // por un mentor. Esto es algo que podríamos refinar en el backend.
-            // Por ahora, asumimos que el admin asigna primero o la solicitud ya tiene mentor.
-            // O, si el mentor "toma" una pendiente, el backend tendría que manejar la auto-asignación.
-
-            const response = await mentorshipRequestService.updateRequest(requestId, updateData);
-            setActionMessage(response.message || `Solicitud actualizada a "${newStatus}".`);
-            await fetchMentorRequests(); // Recargar la lista
+            setLoading(true); 
+            const response = await mentorshipRequestService.updateRequest(requestId, { status: newStatus });
+            toast.success(response.message || `Solicitud actualizada a "${formatStatusText(newStatus, 'request')}".`);
+            await fetchMentorRequests(); 
         } catch (err) {
-            setActionError(err.message || `Error al actualizar la solicitud a "${newStatus}".`);
+            toast.error(err.message || `Error al actualizar la solicitud.`);
             console.error(err);
         } finally {
             setLoading(false);
         }
     };
+    
+    const handleRequestCardClick = (requestId) => {
+        navigate(`/mentor-dashboard/requests/${requestId}`);
+    };
 
     if (loading && requests.length === 0) {
-        return <p>Cargando solicitudes...</p>;
+        return <p>Cargando asignaciones...</p>;
     }
 
-    if (error && requests.length === 0 && !actionMessage && !actionError) {
-        return <p style={{ color: 'red' }}>Error: {error}</p>;
-    }
+    // Botones de acción condicionales para el mentor
+    const renderActionButtons = (req) => {
+        if (!currentUser || req.isDeleted) return null;
 
-    const canAcceptOrReject = (status) => status === 'pendiente';
-    const canStartProgress = (status) => status === 'aceptada_mentor';
-    const canCompleteOrCancelMentor = (status) => status === 'en_progreso' || status === 'aceptada_mentor';
+        const isAssignedToMe = req.mentorUser?._id === currentUser.id;
+        const isPendingAndUnassigned = req.status === 'pendiente' && !req.mentorUser;
+
+        // Si el backend no auto-asigna al "Tomar", necesitaríamos un estado de "procesando toma"
+        // y llamar a updateRequest con { mentorUserId: currentUser.id, status: 'aceptada_mentor' }
+        // Por ahora, el "Tomar Solicitud" directamente intenta cambiar a 'aceptada_mentor'.
+        // El backend debe manejar la asignación si el mentorUser es null y un mentor acepta.
+
+        if (isAssignedToMe) {
+            if (req.status === 'pendiente') {
+                return (
+                    <>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'aceptada_mentor', req.title)}} style={{backgroundColor: 'lightgreen'}}>Aceptar</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'rechazada_mentor', req.title)}} style={{backgroundColor: 'salmon', marginLeft: '5px'}}>Rechazar</button>
+                    </>
+                );
+            }
+            if (req.status === 'aceptada_mentor') {
+                 return (
+                    <>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'en_progreso', req.title)}} style={{backgroundColor: 'lightblue'}}>Iniciar Progreso</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'cancelada_mentor', req.title)}} style={{backgroundColor: 'grey', color:'white', marginLeft: '5px'}}>Cancelar</button>
+                    </>
+                 );
+            }
+            if (req.status === 'en_progreso') {
+                 return (
+                    <>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'completada', req.title)}} style={{backgroundColor: 'lightgreen'}}>Completar</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'cancelada_mentor', req.title)}} style={{backgroundColor: 'grey', color:'white', marginLeft: '5px'}}>Cancelar</button>
+                    </>
+                 );
+            }
+        } else if (isPendingAndUnassigned && req.status === 'pendiente') { // Mentor puede tomar una pendiente sin asignar
+            return (
+                <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'aceptada_mentor', req.title)}} style={{backgroundColor: 'orange', color: 'white'}}>Tomar Solicitud</button>
+            );
+        }
+        return null; // No hay acciones para otros casos en esta vista de lista
+    };
 
 
     return (
         <div>
-            <h2>Panel de Mentor - Solicitudes de Mentoría</h2>
-            {/* Aquí podría ir un resumen o estadísticas para el mentor */}
-
-            {actionMessage && <p style={{ color: 'green' }}>{actionMessage}</p>}
-            {actionError && <p style={{ color: 'red' }}>Error en acción: {actionError}</p>}
+            <h2>Panel de Mentor - Mis Mentorías</h2>
             
-            {loading && <p>Actualizando lista...</p>}
+            {loading && requests.length > 0 && <p>Actualizando lista...</p>}
 
             {requests.length === 0 && !loading ? (
-                <p>No hay solicitudes de mentoría para mostrarte en este momento.</p>
+                <p>No tienes solicitudes de mentoría asignadas o pendientes por tomar en este momento.</p>
             ) : (
-                <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-                    <thead>
-                        <tr>
-                            <th>Título</th>
-                            <th>Estudiante</th>
-                            <th>Tipo de Ayuda</th>
-                            <th>Estado</th>
-                            <th>Fecha Creación</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {requests.map((req) => {
-                            const isAssignedToMe = req.mentorUser?._id === currentUser?.id;
-                            const isPendingAndUnassigned = req.status === 'pendiente' && !req.mentorUser;
-
-                            return (
-                                <tr key={req._id} style={{ backgroundColor: req.isDeleted ? '#ffe0e0' : 'transparent' }}>
-                                    <td>
-                                        <Link to={`/mentor-dashboard/requests/${req._id}`}>
-                                            {req.title}
-                                        </Link>
-                                    </td>
-                                    <td>{req.studentUser?.nombre} {req.studentUser?.apellido || ''}</td>
-                                    <td>{req.helpType?.name || 'N/A'}</td>
-                                    <td>{req.status}</td>
-                                    <td>{new Date(req.createdAt).toLocaleDateString()}</td>
-                                    <td>
-                                        {/* Lógica de botones de acción para el mentor */}
-                                        {isAssignedToMe && canAcceptOrReject(req.status) && (
-                                            <>
-                                                <button onClick={() => handleUpdateRequestStatus(req._id, 'aceptada_mentor', req.title)} style={{backgroundColor: 'lightgreen'}}>Aceptar</button>
-                                                <button onClick={() => handleUpdateRequestStatus(req._id, 'rechazada_mentor', req.title)} style={{backgroundColor: 'salmon', marginLeft: '5px'}}>Rechazar</button>
-                                            </>
-                                        )}
-                                        {isAssignedToMe && canStartProgress(req.status) && (
-                                            <button onClick={() => handleUpdateRequestStatus(req._id, 'en_progreso', req.title)} style={{backgroundColor: 'lightblue'}}>Iniciar Progreso</button>
-                                        )}
-                                        {isAssignedToMe && canCompleteOrCancelMentor(req.status) && (
-                                            <>
-                                                <button onClick={() => handleUpdateRequestStatus(req._id, 'completada', req.title)} style={{backgroundColor: 'lightgreen', marginLeft: '5px'}}>Completar</button>
-                                                <button onClick={() => handleUpdateRequestStatus(req._id, 'cancelada_mentor', req.title)} style={{backgroundColor: 'grey', color: 'white', marginLeft: '5px'}}>Cancelar (Mentor)</button>
-                                            </>
-                                        )}
-                                        {isPendingAndUnassigned && ( // Si el mentor puede "tomar" una solicitud pendiente
-                                            <button onClick={() => handleUpdateRequestStatus(req._id, 'aceptada_mentor', req.title)} style={{backgroundColor: 'orange', color: 'white'}}>Tomar Solicitud</button>
-                                        )}
-                                        {/* Botón para ver detalles siempre disponible si es relevante para el mentor */}
-                                        {/* <Link to={`/mentor-dashboard/requests/${req._id}`} style={{marginLeft: '5px'}}><button>Detalles</button></Link> */}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                <ul className="item-list">
+                    {requests.map((req) => (
+                        <li 
+                            key={req._id} 
+                            className="item-list-row"
+                            onClick={() => handleRequestCardClick(req._id)}
+                            style={{ 
+                                cursor: 'pointer',
+                                opacity: req.isDeleted ? 0.6 : 1,
+                                borderLeft: `5px solid ${getStatusColorClass(req.status)}`
+                            }}
+                            title="Ver detalles de la solicitud"
+                        >
+                            <div className="item-field" style={{flexBasis: '35%', flexGrow: 2}}>
+                                <span style={{fontSize: '1.1em', fontWeight: 'bold', color: '#2c3e50'}}>{req.title}</span>
+                                <span style={{fontSize: '0.9em', color: '#7f8c8d', display: 'block'}}>
+                                    Tipo: {req.helpType?.name || 'N/A'}
+                                </span>
+                            </div>
+                            <div className="item-field" style={{flexBasis: '25%'}}>
+                                <strong>Estudiante:</strong>
+                                <span>{req.studentUser?.nombre} {req.studentUser?.apellido || ''}</span>
+                            </div>
+                             <div className="item-field" style={{flexBasis: '20%'}}>
+                                <strong>Estado:</strong>
+                                <span>
+                                    <span className={`status-dot ${getRequestStatusDotClass(req.status)}`}></span>
+                                    {formatStatusText(req.status, 'request')}
+                                </span>
+                            </div>
+                            <div className="item-field item-actions" style={{flexBasis: '20%', textAlign: 'right'}}>
+                                {renderActionButtons(req)}
+                                {req.isDeleted && <span style={{color: '#e74c3c', fontStyle: 'italic'}}>(Eliminada)</span>}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

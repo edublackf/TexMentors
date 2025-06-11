@@ -14,46 +14,51 @@ const generateToken = (id, rol) => {
 // @route   POST /api/auth/register
 // @access  Public
 exports.registerUser = async (req, res) => {
-    const { nombre, apellido, email, password, rol, carrera, cicloActual } = req.body;
+    // Solo se toman estos campos del body para el auto-registro de estudiantes
+    const { nombre, apellido, email, password, carrera, cicloActual } = req.body;
+
+    // Validaciones básicas de campos requeridos para estudiantes
+    if (!nombre || !apellido || !email || !password) {
+        return res.status(400).json({ message: 'Nombre, apellido, email y contraseña son obligatorios.' });
+    }
+    // Puedes añadir más validaciones para carrera, cicloActual si son obligatorios para estudiantes
 
     try {
-        // 1. Verificar si el email ya existe
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'El email ya está registrado.' });
         }
 
-        // 2. Crear el nuevo usuario (la contraseña se hashea automáticamente por el middleware pre-save en userModel)
         const user = await User.create({
             nombre,
             apellido,
             email,
-            password, // Se envía en texto plano, el modelo se encarga de hashearla
-            rol: rol || 'estudiante', // Rol por defecto si no se provee
-            carrera,
-            cicloActual
+            password, // Se hashea en el pre-save del modelo
+            rol: 'estudiante', // <--- FORZAR SIEMPRE A 'estudiante'
+            carrera: carrera || '', // Hacer opcional o validar
+            cicloActual: cicloActual || '', // Hacer opcional o validar
+            isVerified: false // Podrías implementar verificación de email más adelante
         });
 
         if (user) {
-            // 3. Generar token y enviar respuesta
-            const token = generateToken(user._id, user.rol);
+            const token = generateToken(user._id, user.rol); // generateToken ya lo tenemos
             res.status(201).json({
                 _id: user._id,
                 nombre: user.nombre,
                 apellido: user.apellido,
                 email: user.email,
                 rol: user.rol,
-                fotoPerfilUrl: user.fotoPerfilUrl,
-                carrera: user.carrera,
-                cicloActual: user.cicloActual,
-                token: token,
-                message: 'Usuario registrado exitosamente.'
+                // No enviar el token directamente en el registro público es una opción
+                // Podrías solo enviar un mensaje de éxito y que luego hagan login.
+                // O enviar el token para auto-loguearlos. Por ahora, lo mantenemos.
+                token: token, 
+                message: 'Usuario estudiante registrado exitosamente. Por favor, inicie sesión.'
             });
         } else {
             res.status(400).json({ message: 'Datos de usuario inválidos.' });
         }
     } catch (error) {
-        console.error('Error en registerUser:', error);
+        console.error('Error en registerUser (estudiante):', error);
         res.status(500).json({ message: 'Error del servidor al registrar el usuario.', error: error.message });
     }
 };
