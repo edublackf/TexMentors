@@ -7,15 +7,53 @@ const User = require('../models/userModel');
 // @access  Private/Admin
 exports.getAllUsers = async (req, res) => {
     try {
-        // El middleware 'protect' ya verificó que es un usuario logueado.
-        // El middleware 'authorize('admin')' (que añadiremos en la ruta) verificará que es admin.
-        const users = await User.find({}).select('-password'); // Excluimos la contraseña
-        res.status(200).json(users);
+        // 1. Obtener y parsear los parámetros de la query de la URL
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const skip = (page - 1) * limit;
+
+        // --- LÓGICA DE FILTROS ---
+        const filter = { isDeleted: false }; // Filtro base
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i'); // 'i' para case-insensitive
+            // Buscar en múltiples campos
+            filter.$or = [
+                { nombre: searchRegex },
+                { apellido: searchRegex },
+                { email: searchRegex }
+            ];
+        }
+        if (req.query.role) {
+            filter.rol = req.query.role;
+        }
+        // 2. Ejecutar dos consultas en paralelo usando Promise.all para eficiencia
+        const [users, totalUsers] = await Promise.all([
+        User.find(filter)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        User.countDocuments(filter)
+    ]);
+
+        // 3. Enviar la respuesta con los datos de los usuarios y la información de paginación
+        res.status(200).json({
+            users,
+            page,
+            totalPages: Math.ceil(totalUsers / limit),
+            totalUsers
+        });
+        
     } catch (error) {
-        console.error('Error en getAllUsers:', error);
-        res.status(500).json({ message: 'Error del servidor al obtener usuarios.', error: error.message });
+        // En caso de cualquier error en las consultas, se captura aquí
+        console.error('ERROR en getAllUsers (paginación):', error); 
+        res.status(500).json({ 
+            message: 'Error del servidor al obtener usuarios.', 
+            error: error.message 
+        });
     }
 };
+
 
 exports.getUserById = async (req, res) => {
     try {
@@ -24,9 +62,7 @@ exports.getUserById = async (req, res) => {
         if (user) {
             res.status(200).json(user);
         } else {
-            // Es importante verificar si el ID tiene un formato válido de ObjectId de MongoDB
-            // antes de asumir que no se encontró. Mongoose a veces maneja esto, pero
-            // una verificación explícita puede ser útil.
+
             if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
                  return res.status(400).json({ message: 'ID de usuario no válido.' });
             }
@@ -141,7 +177,7 @@ exports.deleteUser = async (req, res) => {
         user.deletedAt = new Date();
         await user.save(); // Guardar los cambios
 
-        res.status(200).json({ message: 'Usuario eliminado (lógicamente) exitosamente.' });
+        res.status(200).json({ message: 'Usuario eliminado  exitosamente.' });
 
     } catch (error) {
         console.error('Error en deleteUser:', error);

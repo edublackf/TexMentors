@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext'; // <--- IMPORTAR useAuth
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; 
 
 const API_URL = 'http://localhost:5000/api/auth';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -13,7 +14,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { setToken, setCurrentUser } = useAuth(); // <--- OBTENER setToken y setCurrentUser DEL CONTEXTO
+  const { setToken, setCurrentUser } = useAuth(); 
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -71,8 +72,8 @@ function LoginForm() {
   };
 
   return (
+    
     <form onSubmit={handleSubmit}>
-      {/* ...el JSX del formulario sigue igual... */}
       <div>
         <label htmlFor="email">Email:</label>
         <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -85,7 +86,13 @@ function LoginForm() {
       <button type="submit" disabled={loading}>
         {loading ? 'Ingresando...' : 'Ingresar'}
       </button>
-    </form>
+      <div style={{ textAlign: 'right', marginTop: '10px' }}>
+                <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+            </div>
+      </form>
+      
+    
+    
   );
 }
 

@@ -18,6 +18,6 @@ router.delete('/:id', authorize('admin'), deleteUser);
 
 router.post('/', authorize('admin'), adminCreateUser);
 
-router.get('/', authorize('admin'), getAllUsers);
+
 
 module.exports = router;

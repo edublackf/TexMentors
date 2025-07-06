@@ -1,5 +1,4 @@
 import React from 'react';
-// Corregir la importación aquí para incluir useNavigate
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import './App.css'; 
 import { useAuth } from './contexts/AuthContext';
@@ -21,6 +20,10 @@ import CreateMentorshipSessionPage from './pages/CreateMentorshipSessionPage';
 import StudentMentorshipRequestDetailPage from './pages/StudentMentorshipRequestDetailPage';
 import MentorDashboardPage from './pages/MentorDashboardPage'; 
 import MentorMentorshipRequestDetailPage from './pages/MentorMentorshipRequestDetailPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import logo from './assets/Logo.png'; 
+
 
 import RegisterPage from './pages/RegisterPage';
 
@@ -45,7 +48,7 @@ const AdminDashboardLayout = () => (
 
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
-    const navigate = useNavigate(); // Ahora debería estar definido
+    const navigate = useNavigate(); 
 
     const handleLogout = () => {
         logout();
@@ -56,14 +59,16 @@ const Navbar = () => {
         <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
             {/* Parte Izquierda del Navbar: Enlaces Principales */}
             <ul style={{ display: 'flex', listStyleType: 'none', padding: 0, margin: 0, gap: '15px' }}>
-                <li><Link to="/">Inicio</Link></li>
+                <li><Link to="/">
+                    <img src={logo} alt="TexMentors Logo" style={{ height: '70px' }} /> 
+                </Link></li>
                 {currentUser && currentUser.rol === 'admin' && <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>}
                 {currentUser && currentUser.rol === 'mentor' && <li><Link to="/mentor-dashboard">Mentor Dashboard</Link></li>}
                 {currentUser && currentUser.rol === 'estudiante' && <li><Link to="/student-dashboard">Estudiante Dashboard</Link></li>}
             </ul>
 
             {/* Parte Derecha del Navbar: Info de Usuario y Logout */}
-            <div style={{ marginLeft: 'auto' }}> {/* Empuja esta sección a la derecha */}
+            <div style={{ marginLeft: 'auto' }}> 
                 {!currentUser ? (
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Link to="/login"><button>Iniciar Sesión</button></Link>
@@ -91,6 +96,10 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} /> 
           <Route path="/" element={<HomePage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} /> 
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> 
+
+          {/* Rutas protegidas */}
 
           <Route 
             path="/admin-dashboard" 
@@ -104,9 +113,9 @@ function App() {
             <Route path="users" element={<AdminUsersPage />} /> 
             <Route path="users/:userId/edit" element={<AdminEditUserPage />} /> 
             <Route path="helptypes" element={<AdminHelpTypesPage />} /> 
-            <Route path="helptypes/new" element={<AdminCreateHelpTypePage />} /> {/* <--- NUEVA RUTA */}
-            <Route path="helptypes/:helpTypeId/edit" element={<AdminEditHelpTypePage />} /> {/* <--- NUEVA RUTA */}
-            <Route path="requests" element={<AdminMentorshipRequestsPage />} /> {/* <--- NUEVA RUTA */}
+            <Route path="helptypes/new" element={<AdminCreateHelpTypePage />} /> 
+            <Route path="helptypes/:helpTypeId/edit" element={<AdminEditHelpTypePage />} /> 
+            <Route path="requests" element={<AdminMentorshipRequestsPage />} /> 
           </Route>
 
           <Route 
@@ -120,7 +129,7 @@ function App() {
             <Route index element={<MentorDashboardPage />} />
             <Route path="requests/:requestId" element={<MentorMentorshipRequestDetailPage />} /> 
 
- {/* Nueva ruta para proponer sesión para una solicitud específica (desde el mentor) */}
+
              <Route path="requests/:requestId/propose-session" element={
               <ProtectedRoute rolesPermitidos={['mentor', 'estudiante', 'admin']}> {/* Permitir a ambos proponer */}
                 <CreateMentorshipSessionPage />

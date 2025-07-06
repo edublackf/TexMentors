@@ -8,14 +8,12 @@ const USERS_API_URL = `${API_BASE_URL}/api/users`;
 
 
 
-// El token JWT ya debería estar siendo adjuntado automáticamente por Axios
-// gracias a la configuración en AuthContext.
-
 // Obtener todos los usuarios (requiere token de admin)
-const getAllUsers = async () => {
+const getAllUsers = async (page = 1, limit = 10, search = '', role = '') => {
     try {
-        const response = await axios.get(USERS_API_URL);
-        return response.data;
+        const response = await axios.get(`${API_URL}?page=${page}&limit=${limit}&search=${search}&role=${role}`);
+        // VERIFICAR ESTA LÍNEA
+        return response.data; // <-- Debe devolver el objeto completo { users, page, totalPages, ... }
     } catch (error) {
         console.error('Error al obtener todos los usuarios:', error.response || error.message);
         throw error.response ? error.response.data : new Error('Error de red o del servidor');
@@ -55,8 +53,7 @@ const deleteUser = async (userId) => {
     }
 };
 
-// Podríamos añadir una función para crear usuarios desde el panel admin si es necesario,
-// pero el registro ya lo maneja authService (o directamente el componente de registro).
+
 
 const userService = {
     getAllUsers,

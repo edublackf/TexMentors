@@ -147,7 +147,7 @@ exports.deleteHelpType = async (req, res) => {
         helpType.deletedAt = new Date();
         await helpType.save();
 
-        res.status(200).json({ message: 'Tipo de ayuda eliminado (lógicamente) exitosamente.' });
+        res.status(200).json({ message: 'Tipo de ayuda eliminado exitosamente.' });
 
     } catch (error) {
         console.error('Error en deleteHelpType:', error);

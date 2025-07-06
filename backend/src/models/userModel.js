@@ -1,6 +1,7 @@
 // backend/src/models/userModel.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Usaremos bcryptjs que es más fácil de instalar en algunos entornos
+const bcrypt = require('bcryptjs'); 
+const crypto = require('crypto');
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
@@ -74,36 +75,32 @@ const userSchema = new Schema({
         default: null
     }
 }, {
-    timestamps: true // Añade createdAt y updatedAt
+    timestamps: true 
 });
 
-// Middleware: Hashear la contraseña ANTES de guardar (si ha sido modificada)
+
 userSchema.pre('save', async function(next) {
-    // Solo hashear la contraseña si ha sido modificada (o es nueva)
+   
     if (!this.isModified('password')) {
         return next();
     }
-    // Generar un "salt"
+    
     const salt = await bcrypt.genSalt(10);
-    // Hashear la contraseña con el salt
+   
     this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
-// Método para comparar la contraseña ingresada con la hasheada en la DB
+
 userSchema.methods.comparePassword = async function(candidatePassword) {
-    // 'this.password' no estaría disponible aquí si 'select: false' no se anula explícitamente
-    // al hacer la query del usuario. Por eso, en el login, se debe pedir explícitamente.
+
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
 
-// Middleware para la eliminación lógica: no mostrar documentos eliminados en las búsquedas find*
-// Esto es útil para que por defecto las consultas no traigan los "eliminados"
-// Se puede sobreescribir si explícitamente se quiere buscar también entre los eliminados.
+
 const autoPopulateIsDeleted = function(next) {
-    // Solo aplicar si la query no tiene explícitamente una condición para isDeleted
-    // Esto permite buscar los borrados si es necesario, ej: this.find({ isDeleted: true })
+
     const filter = this.getFilter();
     if (filter && typeof filter.isDeleted === 'undefined') {
         this.where({ isDeleted: false });
@@ -111,19 +108,35 @@ const autoPopulateIsDeleted = function(next) {
     next();
 };
 
+
+userSchema.methods.createPasswordResetToken = function() {
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+
+    this.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    
+
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 mins en ms
+
+    console.log({ resetToken }, this.passwordResetToken);
+
+    return resetToken;
+};
+
 userSchema.pre('find', autoPopulateIsDeleted);
 userSchema.pre('findOne', autoPopulateIsDeleted);
-userSchema.pre('findOneAndUpdate', autoPopulateIsDeleted); // Asegúrate de que esto no interfiera con "eliminar" lógicamente
+userSchema.pre('findOneAndUpdate', autoPopulateIsDeleted); 
 userSchema.pre('countDocuments', autoPopulateIsDeleted);
-userSchema.pre('count', autoPopulateIsDeleted); // Para versiones más antiguas de Mongoose
+userSchema.pre('count', autoPopulateIsDeleted); 
 
 
-// Si usas findOneAndUpdate para "eliminar" (set isDeleted: true),
-// el middleware pre('findOneAndUpdate') podría impedir que encuentres el doc para actualizarlo.
-// Una estrategia para el soft delete es tener un método en el modelo o manejarlo en el servicio/controlador.
-// Por ejemplo, para actualizar isDeleted a true, la query no debería ser filtrada por isDeleted:false.
 
-// Creación del modelo
+
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;

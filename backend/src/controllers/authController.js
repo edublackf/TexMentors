@@ -1,12 +1,15 @@
 // backend/src/controllers/authController.js
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // Ya lo tenemos, pero para confirmar
+const bcrypt = require('bcryptjs'); 
+
+const sendEmail = require('../utils/email');
+const crypto = require('crypto');
 
 // Función para generar el token JWT
 const generateToken = (id, rol) => {
     return jwt.sign({ id, rol }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN || '1d', // Usar variable de entorno o default
+        expiresIn: process.env.JWT_EXPIRES_IN || '1d', 
     });
 };
 
@@ -21,7 +24,7 @@ exports.registerUser = async (req, res) => {
     if (!nombre || !apellido || !email || !password) {
         return res.status(400).json({ message: 'Nombre, apellido, email y contraseña son obligatorios.' });
     }
-    // Puedes añadir más validaciones para carrera, cicloActual si son obligatorios para estudiantes
+   
 
     try {
         const userExists = await User.findOne({ email });
@@ -37,11 +40,11 @@ exports.registerUser = async (req, res) => {
             rol: 'estudiante', // <--- FORZAR SIEMPRE A 'estudiante'
             carrera: carrera || '', // Hacer opcional o validar
             cicloActual: cicloActual || '', // Hacer opcional o validar
-            isVerified: false // Podrías implementar verificación de email más adelante
+            isVerified: false 
         });
 
         if (user) {
-            const token = generateToken(user._id, user.rol); // generateToken ya lo tenemos
+            const token = generateToken(user._id, user.rol); 
             res.status(201).json({
                 _id: user._id,
                 nombre: user.nombre,
@@ -116,11 +119,9 @@ exports.loginUser = async (req, res) => {
 // @access  Private (requiere token)
 // (Necesitaremos un middleware de autenticación para proteger esta ruta)
 exports.getMe = async (req, res) => {
-    // El middleware de autenticación (que crearemos luego) añadirá req.user
-    // Aquí asumimos que req.user ya está disponible
+
     try {
-        // Buscamos al usuario por el ID que el middleware de autenticación puso en req.user.id
-        // No necesitamos .select('+password') porque no estamos lidiando con la contraseña aquí.
+
         const user = await User.findById(req.user.id).select('-password'); // Excluimos explícitamente por si acaso
 
         if (!user) {
@@ -140,5 +141,107 @@ exports.getMe = async (req, res) => {
     } catch (error) {
         console.error('Error en getMe:', error);
         res.status(500).json({ message: 'Error del servidor al obtener el perfil.', error: error.message });
+    }
+};
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        // 1) Obtener usuario basado en el email enviado
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) {
+ 
+            return res.status(200).json({ message: 'Si un usuario con ese email existe, se le enviará un enlace para resetear la contraseña.' });
+        }
+
+        // 2) Generar el token de reseteo aleatorio (usando el método del modelo)
+        const resetToken = user.createPasswordResetToken();
+        await user.save({ validateBeforeSave: false }); // Guardar el usuario con el token hasheado y la expiración. Desactivar validaciones para no tener problemas con otros campos required.
+
+        // 3) Enviar el token de vuelta al email del usuario
+        //const resetURL = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`; // O la URL de tu frontend
+        // Para desarrollo, si el frontend corre en otro puerto (ej. 5173):
+        const frontendURL = `http://localhost:5173/reset-password/${resetToken}`;
+
+        const message = `¿Olvidaste tu contraseña? Envía una petición PUT con tu nueva contraseña a esta URL: ${frontendURL}.\nSi no olvidaste tu contraseña, por favor ignora este email.`;
+        const htmlMessage = `<p>¿Olvidaste tu contraseña? Haz clic <a href="${frontendURL}">aquí</a> para establecer una nueva.</p><p>El enlace es válido por 10 minutos.</p><p>Si no olvidaste tu contraseña, por favor ignora este email.</p>`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Tu token para resetear la contraseña (válido por 10 min)',
+                message: message,
+                html: htmlMessage,
+            });
+
+            res.status(200).json({
+                message: 'Token enviado al correo electrónico!'
+            });
+        } catch (emailError) {
+            // Si el email falla, debemos limpiar el token de la DB para evitar que el usuario quede en un estado inconsistente.
+            user.passwordResetToken = undefined;
+            user.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            
+            return res.status(500).json({ message: 'Hubo un error enviando el email. Por favor, inténtelo de nuevo más tarde.' });
+        }
+
+    } catch (error) {
+        console.error('ERROR EN FORGOT PASSWORD:', error);
+        res.status(500).json({ message: 'Ocurrió un error en el servidor.' });
+    }
+};
+
+// @desc    Resetear la contraseña
+// @route   PUT /api/auth/reset-password/:token
+// @access  Public
+exports.resetPassword = async (req, res) => {
+    try {
+        // 1) Obtener el token de la URL y hashearlo para buscarlo en la DB
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(req.params.token)
+            .digest('hex');
+
+        // 2) Encontrar al usuario por el token hasheado y verificar que no ha expirado
+        // $gt: Date.now() significa "greater than now" (mayor que ahora)
+        const user = await User.findOne({ 
+            passwordResetToken: hashedToken, 
+            passwordResetExpires: { $gt: Date.now() } 
+        });
+
+        // 3) Si el token no es válido o ha expirado
+        if (!user) {
+            return res.status(400).json({ message: 'El token no es válido o ha expirado. Por favor, solicita un nuevo reseteo.' });
+        }
+
+        // 4) Si el token es válido, establecer la nueva contraseña
+        // El middleware pre('save') en el modelo se encargará de hashear la nueva contraseña
+        user.password = req.body.password;
+        // Opcional: si quieres pedir confirmación de contraseña, la validación se haría aquí
+        // if (req.body.password !== req.body.passwordConfirm) { ... }
+
+        // 5) Limpiar los campos de reseteo del documento del usuario
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+
+        await user.save(); // Guardar el usuario con la nueva contraseña y los campos de reseteo limpios
+
+        // 6) (Opcional pero recomendado) Enviar un nuevo token JWT para que el usuario pueda iniciar sesión automáticamente
+        const token = jwt.sign({ id: user._id, rol: user.rol }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+        });
+        
+        res.status(200).json({
+            message: 'Contraseña actualizada exitosamente.',
+            token: token
+        });
+
+    } catch (error) {
+        console.error('ERROR EN RESET PASSWORD:', error);
+         if (error.name === 'ValidationError') { // Si la nueva contraseña no cumple los requisitos del modelo (ej. minlength)
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: messages.join('. ') });
+        }
+        res.status(500).json({ message: 'Ocurrió un error en el servidor.' });
     }
 };

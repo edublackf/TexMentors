@@ -112,7 +112,7 @@ console.log("Update Data Object:", updateData); // <-- MUY IMPORTANTE
     };
     
     const handleDeleteRequest = async (requestId, requestTitle) => {
-        if (window.confirm(`¿Estás seguro de que quieres eliminar (lógicamente) la solicitud "${requestTitle}"?`)) {
+        if (window.confirm(`¿Estás seguro de que quieres eliminar la solicitud "${requestTitle}"?`)) {
             try {
                 setLoading(true);
                 const response = await mentorshipRequestService.deleteRequest(requestId);
