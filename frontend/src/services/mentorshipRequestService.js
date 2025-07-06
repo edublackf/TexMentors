@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const REQUESTS_API_URL = `${API_BASE_URL}/api/mentorship-requests`; // Construir la URL completa
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/mentorship-requests`;
 
 // El token JWT ya debería estar siendo adjuntado automáticamente por Axios.
 

@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const HELPTYPES_API_URL = `${API_BASE_URL}/api/helptypes`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/helptypes`;
 
 // Obtener todos los tipos de ayuda (puede ser accedido por cualquier usuario logueado)
 const getAllHelpTypes = async () => {

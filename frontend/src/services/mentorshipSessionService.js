@@ -3,6 +3,7 @@ import axios from 'axios';
 // URL base para los endpoints de sesiones de mentoría
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const SESSIONS_API_URL = `${API_BASE_URL}/api/sessions`; 
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/mentorship-sessions`;
 
 // El token JWT se adjunta automáticamente por el interceptor de Axios configurado en AuthContext.
 
