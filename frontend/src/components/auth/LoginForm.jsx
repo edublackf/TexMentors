@@ -22,7 +22,7 @@ function LoginForm() {
     setLoading(true);
 
     if (!email || !password) {
-      setError('Por favor, ingrese email y contraseña.');
+      setError('Por favor, ingrese email y contraseña');
       setLoading(false);
       return;
     }
