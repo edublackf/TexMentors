@@ -1,11 +1,16 @@
 import axios from 'axios';
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+const AUTH_API_URL = `${API_BASE_URL}/api/auth`;
 
 
 const forgotPassword = async (email) => {
     try {
-        const response = await axios.post(`${API_URL}/forgot-password`, { email });
+        // Asegúrate de que estás llamando a la URL correcta y completa
+        // Debería ser algo como 'https://texmentors-backend.onrender.com/api/auth/forgot-password'
+        console.log("Intentando llamar a:", `${AUTH_API_URL}/forgot-password`); // <-- Añade este log para depurar
+        const response = await axios.post(`${AUTH_API_URL}/forgot-password`, { email });
         return response.data;
     } catch (error) {
         console.error('Error al solicitar reseteo de contraseña:', error.response || error.message);
