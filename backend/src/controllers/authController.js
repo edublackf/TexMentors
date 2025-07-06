@@ -160,10 +160,13 @@ exports.forgotPassword = async (req, res) => {
         // 3) Enviar el token de vuelta al email del usuario
         const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
         // Para desarrollo, si el frontend corre en otro puerto (ej. 5173):
-        //const frontendURL = `http://localhost:5173/reset-password/${resetToken}`;
+        const frontendURL = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
-        const message = `¿Olvidaste tu contraseña? Envía una petición PUT con tu nueva contraseña a esta URL: ${resetURL}.\nSi no olvidaste tu contraseña, por favor ignora este email.`;
-        const htmlMessage = `<p>¿Olvidaste tu contraseña? Haz clic <a href="${resetURL}">aquí</a> para establecer una nueva.</p><p>El enlace es válido por 10 minutos.</p><p>Si no olvidaste tu contraseña, por favor ignora este email.</p>`;
+        // Log para depuración
+console.log('CONSTRUYENDO URL DE RESETEO:', frontendURL);
+
+        const message = `¿Olvidaste tu contraseña? Envía una petición PUT con tu nueva contraseña a esta URL: ${frontendURL}.\nSi no olvidaste tu contraseña, por favor ignora este email.`;
+        const htmlMessage = `<p>¿Olvidaste tu contraseña? Haz clic <a href="${frontendURL}">aquí</a> para establecer una nueva.</p><p>El enlace es válido por 10 minutos.</p><p>Si no olvidaste tu contraseña, por favor ignora este email.</p>`;
 
         try {
             await sendEmail({

@@ -1,29 +1,21 @@
-import axios from 'axios';
+import api from './api'; // <-- Importa la instancia centralizada de Axios
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-
-const USERS_API_URL = `${API_BASE_URL}/api/users`;
-
-
-
-
-// Obtener todos los usuarios (requiere token de admin)
+// Obtener todos los usuarios con paginación
 const getAllUsers = async (page = 1, limit = 10, search = '', role = '') => {
     try {
-        const response = await axios.get(`${USERS_API_URL}?page=${page}&limit=${limit}&search=${search}&role=${role}`);
-        // VERIFICAR ESTA LÍNEA
-        return response.data; // <-- Debe devolver el objeto completo { users, page, totalPages, ... }
+        // El endpoint ahora es relativo a la baseURL de la instancia `api`
+        const response = await api.get(`/users?page=${page}&limit=${limit}&search=${search}&role=${role}`);
+        return response.data;
     } catch (error) {
         console.error('Error al obtener todos los usuarios:', error.response || error.message);
         throw error.response ? error.response.data : new Error('Error de red o del servidor');
     }
 };
 
-// Obtener un usuario por ID (requiere token de admin)
+// Obtener un usuario por ID
 const getUserById = async (userId) => {
     try {
-        const response = await axios.get(`${USERS_API_URL}/${userId}`);
+        const response = await api.get(`/users/${userId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al obtener el usuario ${userId}:`, error.response || error.message);
@@ -31,10 +23,10 @@ const getUserById = async (userId) => {
     }
 };
 
-// Actualizar un usuario (requiere token de admin)
+// Actualizar un usuario
 const updateUser = async (userId, userData) => {
     try {
-        const response = await axios.put(`${USERS_API_URL}/${userId}`, userData);
+        const response = await api.put(`/users/${userId}`, userData);
         return response.data;
     } catch (error) {
         console.error(`Error al actualizar el usuario ${userId}:`, error.response || error.message);
@@ -42,18 +34,16 @@ const updateUser = async (userId, userData) => {
     }
 };
 
-// Eliminar (lógicamente) un usuario (requiere token de admin)
+// Eliminar (lógicamente) un usuario
 const deleteUser = async (userId) => {
     try {
-        const response = await axios.delete(`${USERS_API_URL}/${userId}`);
+        const response = await api.delete(`/users/${userId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al eliminar el usuario ${userId}:`, error.response || error.message);
         throw error.response ? error.response.data : new Error('Error de red o del servidor');
     }
 };
-
-
 
 const userService = {
     getAllUsers,

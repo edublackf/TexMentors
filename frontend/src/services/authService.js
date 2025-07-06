@@ -1,16 +1,9 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-const AUTH_API_URL = `${API_BASE_URL}/api/auth`;
-
+import api from './api'; // <-- Importa la instancia centralizada de Axios
 
 const forgotPassword = async (email) => {
     try {
-        // Asegúrate de que estás llamando a la URL correcta y completa
-        // Debería ser algo como 'https://texmentors-backend.onrender.com/api/auth/forgot-password'
-        console.log("Intentando llamar a:", `${AUTH_API_URL}/forgot-password`); // <-- Añade este log para depurar
-        const response = await axios.post(`${AUTH_API_URL}/forgot-password`, { email });
+        // La URL base (`.../api`) ya está en la instancia. Solo necesitas la parte específica.
+        const response = await api.post('/auth/forgot-password', { email });
         return response.data;
     } catch (error) {
         console.error('Error al solicitar reseteo de contraseña:', error.response || error.message);
@@ -18,9 +11,22 @@ const forgotPassword = async (email) => {
     }
 };
 
-const authService = {
-    forgotPassword
+// Si tienes más funciones de auth como login o register aquí, también deberían usar `api`.
+// Ejemplo:
+const login = async (email, password) => {
+    try {
+        const response = await api.post('/auth/login', { email, password });
+        return response.data;
+    } catch (error) {
+         console.error('Error al iniciar sesión:', error.response || error.message);
+        throw error.response ? error.response.data : new Error('Error de red o del servidor');
+    }
+};
 
+
+const authService = {
+    forgotPassword,
+    login, // Exportar si la tienes aquí
 };
 
 export default authService;
