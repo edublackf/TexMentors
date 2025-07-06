@@ -54,7 +54,7 @@ app.use('/api/mentorship-requests', mentorshipRequestRoutes);
 app.use('/api/sessions', mentorshipSessionRoutes); 
 
 // Definir el puerto y arrancar el servidor
-const PORT = process.env.PORT || 5001; // Usar el puerto de .env o 5001 por defecto
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 5000; 
+app.listen(PORT, '0.0.0.0', () => { 
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

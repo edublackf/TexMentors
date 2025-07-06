@@ -1,0 +1,13 @@
+version: 1.0
+runtime: nodejs18  
+build:
+  commands:
+    pre-build:
+      - echo "Installing dependencies..."
+      - npm install
+    build:
+      - echo "No build step required for this Express app."
+run:
+  command: npm start # Este comando debe coincidir con el script "start" en tu package.json
+  network:
+    port: 5000 # El puerto que tu app expone. Asegúrate que coincida con tu backend.
