@@ -50,7 +50,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
         <div style={modalOverlayStyle} onClick={onClose}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}> 
                 <h3 style={modalTitleStyle}>{title || 'Confirmar Acción'}</h3>
-                <p style={modalMessageStyle}>{message || '¿Estás seguro de que quieres continuar?'}</p>
+                <p style={modalMessageStyle}>{message || '¿Estás seguro de continuar?'}</p>
                 <div style={modalActionsStyle}>
                     <button onClick={onClose} style={{ backgroundColor: '#7f8c8d' }}>
                         Cancelar

@@ -190,7 +190,7 @@ console.log('CONSTRUYENDO URL DE RESETEO:', frontendURL);
 
     } catch (error) {
         console.error('ERROR EN FORGOT PASSWORD:', error);
-        res.status(500).json({ message: 'Ocurrió un error en el servidor.' });
+        res.status(500).json({ message: 'Ocurrió un error en servidor.' });
     }
 };
 
