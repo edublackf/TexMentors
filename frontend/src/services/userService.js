@@ -1,9 +1,9 @@
-import api from './api'; // <-- Importa la instancia centralizada de Axios
+import api from './api'; 
 
 // Obtener todos los usuarios con paginación
 const getAllUsers = async (page = 1, limit = 10, search = '', role = '') => {
     try {
-        // El endpoint ahora es relativo a la baseURL de la instancia `api`
+        
         const response = await api.get(`/users?page=${page}&limit=${limit}&search=${search}&role=${role}`);
         return response.data;
     } catch (error) {
@@ -34,7 +34,7 @@ const updateUser = async (userId, userData) => {
     }
 };
 
-// Eliminar (lógicamente) un usuario
+
 const deleteUser = async (userId) => {
     try {
         const response = await api.delete(`/users/${userId}`);
@@ -45,11 +45,37 @@ const deleteUser = async (userId) => {
     }
 };
 
+// Obtener el perfil del usuario logueado
+const getMyProfile = async () => {
+    try {
+        const response = await api.get('/users/profile/me');
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener mi perfil:', error.response || error.message);
+        throw error.response ? error.response.data : new Error('Error de red o del servidor');
+    }
+};
+
+// Actualizar el perfil del usuario logueado
+const updateMyProfile = async (profileData) => {
+    try {
+        const response = await api.put('/users/profile/me', profileData);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar mi perfil:', error.response || error.message);
+        throw error.response ? error.response.data : new Error('Error de red o del servidor');
+    }
+};
+
+
+
 const userService = {
     getAllUsers,
     getUserById,
     updateUser,
     deleteUser,
+    getMyProfile,   
+    updateMyProfile,
 };
 
 export default userService;
