@@ -22,6 +22,15 @@ function AdminMentorshipRequestsPage() {
         'en_progreso', 'completada', 'cancelada_estudiante', 'cancelada_admin', 'cancelada_mentor'
     ];
 
+    const ADMIN_STATUS_ACTIONS = {
+    '': 'Mantener Estado Actual', // Opción por defecto
+    'pendiente': 'Marcar como Pendiente',
+    'rechazada_admin': 'Rechazar Solicitud',
+    'en_progreso': 'Forzar a "En Progreso"',
+    'completada': 'Forzar a "Finalizada"',
+    'cancelada_admin': 'Cancelar Solicitud (Admin)'
+};
+
     const fetchRequestsAndMentors = useCallback(async () => {
         try {
             setLoading(true);
@@ -32,9 +41,17 @@ function AdminMentorshipRequestsPage() {
             const requestsData = await mentorshipRequestService.getAllRequests(); // Admin ve todas
             setRequests(requestsData);
 
-            const usersData = await userService.getAllUsers(); // Obtener todos los usuarios
-            setMentors(usersData.filter(user => user.rol === 'mentor' && !user.isDeleted)); // Filtrar solo mentores activos
-            
+            console.log("Fetching all users for mentor list...");
+            const usersData = await userService.getAllUsers(); 
+            console.log("All users received:", usersData);
+            setMentors(usersData.filter(user => user.rol === 'mentor' && !user.isDeleted)); 
+
+            const activeMentors = usersData.filter(user => user.rol === 'mentor' && !user.isDeleted);
+            // Filtrar solo mentores activos
+            console.log("Filtered active mentors:", activeMentors); 
+
+            setMentors(activeMentors);
+
         } catch (err) {
             setError(err.message || 'Error al cargar datos.');
             console.error(err);
@@ -142,7 +159,7 @@ console.log("Update Data Object:", updateData); // <-- MUY IMPORTANTE
             {actionError && <p style={{ color: 'red' }}>Error en acción: {actionError}</p>}
             {loading && <p>Actualizando...</p>}
 
-            {/* Modal/Formulario de Edición (simple, en línea por ahora) */}
+
             {editingRequest && (
                 <div style={{ border: '2px solid blue', padding: '20px', margin: '20px 0' }}>
                     <h3>Editando Solicitud: {editingRequest.title}</h3>
@@ -151,19 +168,22 @@ console.log("Update Data Object:", updateData); // <-- MUY IMPORTANTE
                         <div>
                             <label htmlFor="mentorAssign">Asignar Mentor:</label>
                             <select id="mentorAssign" value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)}>
-                                <option value="">-- Sin Asignar --</option>
-                                {mentors.map(mentor => (
-                                    <option key={mentor._id} value={mentor._id}>
-                                        {mentor.nombre} {mentor.apellido} ({mentor.especialidades?.join(', ') || 'General'})
-                                    </option>
-                                ))}
-                            </select>
+    <option value="">-- Sin Asignar --</option>
+    {mentors.map(mentor => ( 
+        <option key={mentor._id} value={mentor._id}>
+            {mentor.nombre} {mentor.apellido} ({mentor.especialidades?.join(', ') || 'General'})
+        </option>
+    ))}
+</select>
                         </div>
                         <div style={{ marginTop: '10px' }}>
                             <label htmlFor="statusUpdate">Cambiar Estado:</label>
                             <select id="statusUpdate" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                                {ALL_STATUSES.map(s => (
-                                    <option key={s} value={s}>{s}</option>
+                               
+                                {Object.entries(ADMIN_STATUS_ACTIONS).map(([statusValue, statusText]) => (
+                                    <option key={statusValue} value={statusValue}>
+                                        {statusText}
+                                    </option>
                                 ))}
                             </select>
                         </div>

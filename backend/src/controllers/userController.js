@@ -91,16 +91,7 @@ exports.updateUser = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
         
-        // Si el usuario está marcado como eliminado lógicamente, quizás no quieras permitir actualizaciones
-        // o manejarlo de una forma específica. Por ahora, permitiremos actualizarlo.
-        // if (user.isDeleted) {
-        //     return res.status(400).json({ message: 'No se puede actualizar un usuario eliminado.' });
-        // }
 
-
-        // Campos que un administrador puede actualizar.
-        // No permitimos cambiar la contraseña directamente aquí para evitar complejidad,
-        // eso podría ser una ruta separada o una lógica más específica.
         const { nombre, apellido, email, rol, carrera, cicloActual, isVerified, fotoPerfilUrl } = req.body;
 
         // Verificar si el email se está cambiando y si el nuevo email ya existe para OTRO usuario

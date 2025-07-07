@@ -305,7 +305,7 @@ exports.deleteMentorshipRequest = async (req, res) => {
         mentorshipRequest.deletedAt = new Date();
         await mentorshipRequest.save();
 
-        res.status(200).json({ message: 'Solicitud de mentoría eliminada (lógicamente) exitosamente.' });
+        res.status(200).json({ message: 'Solicitud de mentoría eliminada exitosamente.' });
 
     } catch (error) {
         console.error('Error en deleteMentorshipRequest:', error);

@@ -18,8 +18,7 @@ exports.createHelpType = async (req, res) => {
             return res.status(400).json({ message: 'Un tipo de ayuda con este nombre ya existe.' });
         }
 
-        // Si existe pero está eliminado lógicamente, podríamos optar por "restaurarlo" o crear uno nuevo.
-        // Por simplicidad, aquí crearemos uno nuevo o puedes adaptar para restaurar.
+
 
         const helpType = await HelpType.create({
             name,

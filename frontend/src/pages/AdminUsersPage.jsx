@@ -131,7 +131,7 @@ function AdminUsersPage() {
                 onClose={() => setIsModalOpen(false)}
                 onConfirm={handleConfirmDelete}
                 title="Confirmar Eliminación de Usuario"
-                message={`¿Estás seguro de que quieres eliminar (lógicamente) al usuario "${userToDelete?.nombre} ${userToDelete?.apellido}"?`}
+                message={`¿Estás seguro de que quieres eliminar al usuario "${userToDelete?.nombre} ${userToDelete?.apellido}"?`}
             />
             
             <h2>Gestión de Usuarios ({pagination.totalUsers})</h2>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import mentorshipRequestService from '../services/mentorshipRequestService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
 
 // --- Funciones Helper (puedes moverlas a un archivo utils.js si las usas en múltiples sitios) ---
 const formatStatusText = (status, type = 'request') => { /* ... como la definimos antes ... */
@@ -45,7 +46,12 @@ function MentorDashboardPage() {
     const navigate = useNavigate(); // Para navegar a detalles
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState(''); // Usaremos toast
+    const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
     const fetchMentorRequests = useCallback(async () => {
         if (!currentUser) return;
@@ -66,25 +72,29 @@ function MentorDashboardPage() {
     }, [fetchMentorRequests]);
 
     const handleUpdateRequestStatus = async (requestId, newStatus, requestTitle) => {
-        // ... (lógica de confirmación y llamada al servicio como la teníamos, usando toast) ...
-        const confirmAction = (newStatus === 'aceptada_mentor' || newStatus === 'rechazada_mentor') ? 
-            window.confirm(`¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' ? 'aceptar' : 'rechazar'}" la solicitud "${requestTitle}"?`)
-            : true; // No pedir confirmación para otros cambios de estado desde aquí (o añadir si es necesario)
-
-        if (!confirmAction) return;
-
+    setModalState({
+      isOpen: true,
+      title: `Confirmar Acción`,
+      message: `¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' ? 'aceptar' : 'rechazar'}" la solicitud "${requestTitle}"?`,
+      onConfirm: async () => {
+        setModalState({ isOpen: false }); // Cerrar modal antes de la acción
         try {
-            setLoading(true); 
+            setLoading(true);
             const response = await mentorshipRequestService.updateRequest(requestId, { status: newStatus });
-            toast.success(response.message || `Solicitud actualizada a "${formatStatusText(newStatus, 'request')}".`);
-            await fetchMentorRequests(); 
+            toast.success(response.message || `Solicitud actualizada.`);
+            await fetchMentorRequests();
         } catch (err) {
             toast.error(err.message || `Error al actualizar la solicitud.`);
-            console.error(err);
         } finally {
             setLoading(false);
         }
-    };
+      }
+    });
+  };
+
+  const handleCloseModal = () => {
+    setModalState({ isOpen: false });
+  };
     
     const handleRequestCardClick = (requestId) => {
         navigate(`/mentor-dashboard/requests/${requestId}`);
@@ -101,10 +111,7 @@ function MentorDashboardPage() {
         const isAssignedToMe = req.mentorUser?._id === currentUser.id;
         const isPendingAndUnassigned = req.status === 'pendiente' && !req.mentorUser;
 
-        // Si el backend no auto-asigna al "Tomar", necesitaríamos un estado de "procesando toma"
-        // y llamar a updateRequest con { mentorUserId: currentUser.id, status: 'aceptada_mentor' }
-        // Por ahora, el "Tomar Solicitud" directamente intenta cambiar a 'aceptada_mentor'.
-        // El backend debe manejar la asignación si el mentorUser es null y un mentor acepta.
+
 
         if (isAssignedToMe) {
             if (req.status === 'pendiente') {
@@ -187,6 +194,13 @@ function MentorDashboardPage() {
                     ))}
                 </ul>
             )}
+            <ConfirmationModal
+            isOpen={modalState.isOpen}
+            onClose={handleCloseModal}
+            onConfirm={modalState.onConfirm}
+            title={modalState.title}
+            message={modalState.message}
+        />
         </div>
     );
 }
