@@ -236,3 +236,71 @@ exports.adminCreateUser = async (req, res) => {
         res.status(500).json({ message: 'Error del servidor al crear el usuario.', error: error.message });
     }
 };
+
+// @desc    Obtener el perfil del usuario logueado
+// @route   GET /api/users/profile/me
+// @access  Private
+exports.getMyProfile = async (req, res) => {
+    // req.user es añadido por el middleware 'protect'
+    // Buscamos al usuario por el ID del token y devolvemos sus datos
+    try {
+        const user = await User.findById(req.user.id).select('-password'); // Excluir la contraseña
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error en getMyProfile:', error);
+        res.status(500).json({ message: 'Error del servidor al obtener el perfil.', error: error.message });
+    }
+};
+
+// @desc    Actualizar el perfil del usuario logueado
+// @route   PUT /api/users/profile/me
+// @access  Private
+exports.updateMyProfile = async (req, res) => {
+    try {
+        // Campos que el usuario puede actualizar por sí mismo.
+        // Excluimos explícitamente el 'rol' para que un usuario no pueda auto-promoverse.
+        // La contraseña y el email se manejarían por separado para mayor seguridad (ej. pidiendo contraseña actual).
+        const { nombre, apellido, carrera, cicloActual, especialidades, intereses, studentAvailability, fotoPerfilUrl } = req.body;
+        
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        // Actualizar los campos si se proporcionan en el body
+        user.nombre = nombre || user.nombre;
+        user.apellido = apellido || user.apellido;
+        user.carrera = carrera !== undefined ? carrera : user.carrera;
+        user.cicloActual = cicloActual !== undefined ? cicloActual : user.cicloActual;
+        user.fotoPerfilUrl = fotoPerfilUrl !== undefined ? fotoPerfilUrl : user.fotoPerfilUrl;
+
+        // Campos específicos de rol
+        if (user.rol === 'mentor' && especialidades !== undefined) {
+            user.especialidades = especialidades;
+        }
+        if (user.rol === 'estudiante' && intereses !== undefined) {
+            user.intereses = intereses;
+        }
+
+        // Si tienes más campos de perfil, puedes añadirlos aquí.
+        
+        const updatedUser = await user.save();
+
+        // Devolvemos el usuario actualizado sin la contraseña
+        const userResponse = updatedUser.toObject();
+        delete userResponse.password;
+
+        res.status(200).json({
+            message: 'Perfil actualizado exitosamente.',
+            user: userResponse
+        });
+
+    } catch (error) {
+        console.error('Error en updateMyProfile:', error);
+        res.status(500).json({ message: 'Error del servidor al actualizar el perfil.', error: error.message });
+    }
+};

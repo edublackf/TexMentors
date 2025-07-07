@@ -22,6 +22,7 @@ import MentorDashboardPage from './pages/MentorDashboardPage';
 import MentorMentorshipRequestDetailPage from './pages/MentorMentorshipRequestDetailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ProfilePage from './pages/ProfilePage';
 import logo from './assets/Logo.png'; 
 
 
@@ -76,8 +77,10 @@ const Navbar = () => {
                     </div>
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>Hola, {currentUser.nombre}!</span> {/* Sin el rol */}
-                        <button onClick={handleLogout}>Logout</button>
+                        <span>
+    Hola, <Link to="/profile" style={{fontWeight: 'bold'}}>{currentUser.nombre}!</Link>
+</span>
+<button onClick={handleLogout}>Logout</button>
                     </div>
                 )}
             </div>
@@ -98,6 +101,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} /> 
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> 
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} /> 
 
           {/* Rutas protegidas */}
 

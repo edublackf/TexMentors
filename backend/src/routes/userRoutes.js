@@ -1,23 +1,30 @@
 // backend/src/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getAllUsers, getUserById, updateUser, deleteUser, adminCreateUser    } = require('../controllers/userController');
+const { 
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+    getMyProfile,
+    updateMyProfile
+} = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Aplicar middleware 'protect' a todas las rutas de usuarios (deben estar logueados)
 router.use(protect);
 
-// GET todos los usuarios (Solo Admin)
-router.get('/', authorize('admin'), getAllUsers);
+router.route('/profile/me')
+    .get(getMyProfile)
+    .put(updateMyProfile);
 
-router.get('/:id', authorize('admin'), getUserById);
+router.route('/')
+    .get(authorize('admin'), getAllUsers);
+    
 
-router.put('/:id', authorize('admin'), updateUser);
-
-router.delete('/:id', authorize('admin'), deleteUser);
-
-router.post('/', authorize('admin'), adminCreateUser);
-
-
+router.route('/:id')
+    .get(authorize('admin'), getUserById)
+    .put(authorize('admin'), updateUser)
+    .delete(authorize('admin'), deleteUser);
 
 module.exports = router;
