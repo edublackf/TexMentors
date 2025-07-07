@@ -1,32 +1,32 @@
-import api from './api'; // <-- Importa la instancia centralizada de Axios
+import api from './api'; // Importa la instancia de Axios configurada
 
-const forgotPassword = async (email) => {
-    try {
-        // La URL base (`.../api`) ya está en la instancia. Solo necesitas la parte específica.
-        const response = await api.post('/auth/forgot-password', { email });
-        return response.data;
-    } catch (error) {
-        console.error('Error al solicitar reseteo de contraseña:', error.response || error.message);
-        throw error.response ? error.response.data : new Error('Error de red o del servidor');
-    }
+// Login
+const login = (email, password) => {
+    return api.post('/auth/login', { email, password });
 };
 
-// Si tienes más funciones de auth como login o register aquí, también deberían usar `api`.
-// Ejemplo:
-const login = async (email, password) => {
-    try {
-        const response = await api.post('/auth/login', { email, password });
-        return response.data;
-    } catch (error) {
-         console.error('Error al iniciar sesión:', error.response || error.message);
-        throw error.response ? error.response.data : new Error('Error de red o del servidor');
-    }
+// Registro
+const register = (userData) => {
+    return api.post('/auth/register', userData);
 };
 
+// Olvidé mi contraseña
+const forgotPassword = (email) => {
+    return api.post('/auth/forgot-password', { email });
+};
+
+// Resetear contraseña
+const resetPassword = (token, password) => {
+    // La petición es a /api/auth/reset-password/:token
+    // Y el body contiene la nueva contraseña
+    return api.put(`/auth/reset-password/${token}`, { password });
+};
 
 const authService = {
+    login,
+    register,
     forgotPassword,
-    login, // Exportar si la tienes aquí
+    resetPassword,
 };
 
 export default authService;

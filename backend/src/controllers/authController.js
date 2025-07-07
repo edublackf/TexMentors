@@ -194,57 +194,44 @@ console.log('CONSTRUYENDO URL DE RESETEO:', frontendURL);
     }
 };
 
-// @desc    Resetear la contraseña
+// @desc    Resetear contraseña
 // @route   PUT /api/auth/reset-password/:token
 // @access  Public
 exports.resetPassword = async (req, res) => {
     try {
-        // 1) Obtener el token de la URL y hashearlo para buscarlo en la DB
+        // 1) Obtener el token (sin hashear) del parámetro de la URL
+        const resetToken = req.params.token;
+        // 2) Hashear el token para poder buscarlo en la DB
         const hashedToken = crypto
             .createHash('sha256')
-            .update(req.params.token)
+            .update(resetToken)
             .digest('hex');
 
-        // 2) Encontrar al usuario por el token hasheado y verificar que no ha expirado
-        // $gt: Date.now() significa "greater than now" (mayor que ahora)
+        // 3) Buscar al usuario por el token hasheado y verificar que no ha expirado
         const user = await User.findOne({ 
             passwordResetToken: hashedToken, 
-            passwordResetExpires: { $gt: Date.now() } 
-        });
-
-        // 3) Si el token no es válido o ha expirado
-        if (!user) {
-            return res.status(400).json({ message: 'El token no es válido o ha expirado. Por favor, solicita un nuevo reseteo.' });
-        }
-
-        // 4) Si el token es válido, establecer la nueva contraseña
-        // El middleware pre('save') en el modelo se encargará de hashear la nueva contraseña
-        user.password = req.body.password;
-        // Opcional: si quieres pedir confirmación de contraseña, la validación se haría aquí
-        // if (req.body.password !== req.body.passwordConfirm) { ... }
-
-        // 5) Limpiar los campos de reseteo del documento del usuario
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-
-        await user.save(); // Guardar el usuario con la nueva contraseña y los campos de reseteo limpios
-
-        // 6) (Opcional pero recomendado) Enviar un nuevo token JWT para que el usuario pueda iniciar sesión automáticamente
-        const token = jwt.sign({ id: user._id, rol: user.rol }, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+            passwordResetExpires: { $gt: Date.now() } // $gt (greater than)
         });
         
-        res.status(200).json({
-            message: 'Contraseña actualizada exitosamente.',
-            token: token
-        });
+        // 4) Si el token es inválido o ha expirado, enviar error
+        if (!user) {
+            return res.status(400).json({ message: 'El token es inválido o ha expirado.' });
+        }
+
+        // 5) Si el token es válido, actualizar la contraseña
+        user.password = req.body.password; // El middleware pre-save de userModel se encargará de hashearla
+        user.passwordResetToken = undefined; // Limpiar el token
+        user.passwordResetExpires = undefined; // Limpiar la expiración
+        
+        await user.save(); // Guardar el usuario con la nueva contraseña
+
+        // 6) (Opcional) Loguear al usuario automáticamente y enviarle un nuevo token JWT
+        // Por simplicidad, por ahora solo confirmamos el reseteo.
+        
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente.' });
 
     } catch (error) {
         console.error('ERROR EN RESET PASSWORD:', error);
-         if (error.name === 'ValidationError') { // Si la nueva contraseña no cumple los requisitos del modelo (ej. minlength)
-            const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: messages.join('. ') });
-        }
         res.status(500).json({ message: 'Ocurrió un error en el servidor.' });
     }
 };
