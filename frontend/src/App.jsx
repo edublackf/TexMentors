@@ -63,9 +63,9 @@ const Navbar = () => {
                 <li><Link to="/">
                     <img src={logo} alt="TexMentors Logo" style={{ height: '70px' }} /> 
                 </Link></li>
-                {currentUser && currentUser.rol === 'admin' && <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>}
+                {/* {currentUser && currentUser.rol === 'admin' && <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>} 
                 {currentUser && currentUser.rol === 'mentor' && <li><Link to="/mentor-dashboard">Mentor Dashboard</Link></li>}
-                {currentUser && currentUser.rol === 'estudiante' && <li><Link to="/student-dashboard">Estudiante Dashboard</Link></li>}
+                {currentUser && currentUser.rol === 'estudiante' && <li><Link to="/student-dashboard">Estudiante Dashboard</Link></li>} */}
             </ul>
 
             {/* Parte Derecha del Navbar: Info de Usuario y Logout */}

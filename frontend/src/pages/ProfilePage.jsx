@@ -1,8 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext'; 
 import userService from '../services/userService';
 import { toast } from 'react-toastify';
 
+
+const CARRERAS_DISPONIBLES = [
+    'Diseño y Desarrollo de Software',
+    'Administración de Redes y Comunicaciones',
+    'Electrónica y Automatización Industrial',
+    'Gestión y Mantenimiento de Maquinaria Industrial',
+    'Operaciones Mineras',
+    'Electricidad Industrial con mención en Sistemas Eléctricos de Potencia',
+    'Producción y Gestión Industrial',
+    'Gestión y Mantenimiento de Maquinaria Pesada',
+    'Mecatrónica Industrial',
+    'Procesos Químicos y Metalúrgicos',
+    'Aviónica y Mecánica Aeronáutica',
+    'Big Data y Ciencia de Datos',
+    'Otra' 
+];
+
+const CICLOS_DISPONIBLES = [
+    'Ciclo 0', 'Ciclo 1', 'Ciclo 2', 'Ciclo 3', 'Ciclo 4', 'Ciclo 5', 'Ciclo 6', 'Egresado', 'Otro'
+];
 
 function ProfilePage() {
     const { currentUser, setCurrentUser } = useAuth(); 
@@ -90,11 +110,21 @@ function ProfilePage() {
                 </div>
                 <div>
                     <label htmlFor="carrera">Carrera:</label>
-                    <input type="text" id="carrera" name="carrera" value={formData.carrera} onChange={handleChange} />
+                    <select id="carrera" name="carrera" value={formData.carrera} onChange={handleChange}>
+                        <option value="">-- Selecciona tu carrera --</option>
+                        {CARRERAS_DISPONIBLES.map(carrera => (
+                            <option key={carrera} value={carrera}>{carrera}</option>
+                        ))}
+                    </select>
                 </div>
                 <div>
                     <label htmlFor="cicloActual">Ciclo Actual:</label>
-                    <input type="text" id="cicloActual" name="cicloActual" value={formData.cicloActual} onChange={handleChange} />
+                    <select id="cicloActual" name="cicloActual" value={formData.cicloActual} onChange={handleChange}>
+                        <option value="">-- Selecciona tu ciclo --</option>
+                        {CICLOS_DISPONIBLES.map(ciclo => (
+                            <option key={ciclo} value={ciclo}>{ciclo}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {currentUser.rol === 'mentor' && (
@@ -118,4 +148,7 @@ function ProfilePage() {
         </div>
     );
 }
+
+
+
 export default ProfilePage;
