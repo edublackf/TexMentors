@@ -53,17 +53,18 @@ function AdminMentorshipRequestsPage() {
       const usersData = await userService.getAllUsers();
       console.log("All users received:", usersData);
       setMentors(
-        usersData.filter((user) => user.rol === "mentor" && !user.isDeleted)
+        // usersData.filter((user) => user.rol === "mentor" && !user.isDeleted);
+        usersData.users.filter(user => user.rol === "mentor")
       );
 
-      const activeMentors = usersData.filter(
-        (user) => user.rol === "mentor" && !user.isDeleted
-      );
-      // Filtrar solo mentores activos
-      console.log("Filtered active mentors:", activeMentors);
+      // const activeMentors = usersData.users.filter(
+      //   (user) => user.rol === "mentor" && !user.isDeleted
+      // );
+      // // Filtrar solo mentores activos
+      // console.log("Filtered active mentors:", activeMentors);
 
-      setMentors(activeMentors);
-    } catch (err) {
+      // setMentors(activeMentors);
+    }catch (err) {
       setError(err.message || "Error al cargar datos.");
       console.error(err);
     } finally {
