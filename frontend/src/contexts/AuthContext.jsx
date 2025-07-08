@@ -34,10 +34,15 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     console.log("Verificando token al inicio con URL:", `${API_BASE_URL}/api/auth/me`);
-                    const response = await axios.get(`${API_BASE_URL}/api/auth/me`); // <--- MODIFICADO
+                    const response = await axios.get(`${API_BASE_URL}/api/auth/me`); 
+                    console.log("responde personal data", response);
                     setCurrentUser({
                         id: response.data._id,
                         nombre: response.data.nombre,
+                        apellido: response.data.apellido,
+                        carrera: response.data.carrera,
+                        cicloActual: response.data.cicloActual,
+                        especialidades: response.data.especialidades || [],
                         email: response.data.email,
                         rol: response.data.rol,
                         fotoPerfilUrl: response.data.fotoPerfilUrl,
