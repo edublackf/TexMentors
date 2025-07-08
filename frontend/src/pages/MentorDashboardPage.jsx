@@ -125,6 +125,7 @@ function MentorDashboardPage() {
             if (req.status === 'aceptada_mentor') {
                  return (
                     <>
+                    <pre>{{req}}</pre>
                         <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'en_progreso', req.title)}} style={{backgroundColor: 'lightblue'}}>Iniciar Progreso</button>
                         <button onClick={(e) => { e.stopPropagation(); handleUpdateRequestStatus(req._id, 'cancelada_mentor', req.title)}} style={{backgroundColor: 'grey', color:'white', marginLeft: '5px'}}>Cancelar</button>
                     </>
