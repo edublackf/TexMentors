@@ -72,6 +72,7 @@ function MentorDashboardPage() {
     }, [fetchMentorRequests]);
 
     const handleUpdateRequestStatus = async (requestId, newStatus, requestTitle) => {
+        console.log(`Actualizando solicitud ${requestId} a estado "${newStatus}", ${requestTitle}`);
     setModalState({
       isOpen: true,
       title: `Confirmar Acción`,
