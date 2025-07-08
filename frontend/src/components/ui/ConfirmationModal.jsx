@@ -55,7 +55,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
                     <button onClick={onClose} style={{ backgroundColor: '#7f8c8d' }}>
                         Cancelar
                     </button>
-                    <button onClick={onConfirm} style={{ backgroundColor: '#e74c3c'  }}>
+                    <button onClick={onConfirm} style={{ backgroundColor: '#3b8eed'  }}>
                         Confirmar
                     </button>
                 </div>

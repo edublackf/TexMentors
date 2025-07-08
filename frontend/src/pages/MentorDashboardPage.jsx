@@ -76,7 +76,7 @@ function MentorDashboardPage() {
     setModalState({
       isOpen: true,
       title: `Confirmar Acción`,
-      message: `¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' || newStatus === 'en_progreso' || newStatus === 'completada' ? 'aceptar' : 'rechazar'}" la solicitud "${requestTitle}"?`,
+      message: `¿Estás seguro de que quieres "${newStatus === 'aceptada_mentor' || newStatus === 'en_progreso' || newStatus === 'completada' ? 'confirmar' : 'cancelar'}" la solicitud "${requestTitle}"?`,
       onConfirm: async () => {
         setModalState({ isOpen: false }); // Cerrar modal antes de la acción
         try {
