@@ -1,6 +1,7 @@
 import api from './api'; // <-- Importa la instancia centralizada de Axios
 
 const API_ENDPOINT = '/mentorship-requests'; // Ruta relativa para esta entidad
+const VITE_SERVER_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const createRequest = async (requestData) => {
     try {
@@ -25,6 +26,7 @@ const getAllRequests = async () => {
 const getRequestById = async (requestId) => {
     try {
         const response = await api.get(`${API_ENDPOINT}/${requestId}`);
+        console.log("data que envío", requestId);
         return response.data;
     } catch (error) {
         console.error(`Error al obtener la solicitud ${requestId}:`, error.response || error.message);
