@@ -15,7 +15,7 @@ const createSession = async (sessionData) => {
 
 const getSessionsForRequest = async (mentorshipRequestId) => {
     try {
-        const response = await api.get(`/request/${mentorshipRequestId}`);
+        const response = await api.get(`${API_ENDPOINT}/request/${mentorshipRequestId}`);
         return response.data;
     } catch (error) {
         console.error(`Error al obtener sesiones para la solicitud ${mentorshipRequestId}:`, error.response || error.message);
