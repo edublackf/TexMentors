@@ -51,9 +51,6 @@ exports.registerUser = async (req, res) => {
                 apellido: user.apellido,
                 email: user.email,
                 rol: user.rol,
-                // No enviar el token directamente en el registro público es una opción
-                // Podrías solo enviar un mensaje de éxito y que luego hagan login.
-                // O enviar el token para auto-loguearlos. Por ahora, lo mantenemos.
                 token: token, 
                 message: 'Usuario estudiante registrado exitosamente. Por favor, inicie sesión.'
             });
@@ -127,7 +124,7 @@ exports.getMe = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
-
+        console.log('Usuario encontrado desde backend:', user);
         res.status(200).json({
             _id: user._id,
             nombre: user.nombre,
@@ -137,6 +134,7 @@ exports.getMe = async (req, res) => {
             fotoPerfilUrl: user.fotoPerfilUrl,
             carrera: user.carrera,
             cicloActual: user.cicloActual,
+            especialidades: user.especialidades || [],
         });
     } catch (error) {
         console.error('Error en getMe:', error);
